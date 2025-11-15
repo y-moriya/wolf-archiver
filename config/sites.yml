@@ -1,0 +1,62 @@
+# config/sites.yml - WolfArchiver サイト設定ファイル
+# 
+# このファイルでアーカイブ対象となるサイトの設定を行います。
+# 詳細は spec/config_loader_spec.md を参照してください。
+
+sites:
+  # サイト識別子（英数字とアンダースコアのみ）
+  sample_site:
+    # 表示名
+    name: "サンプル人狼サイト"
+    
+    # ベースURL
+    base_url: "http://example.com/wolf.cgi"
+    
+    # 文字エンコーディング（Shift_JIS, EUC-JP, UTF-8）
+    encoding: "Shift_JIS"
+    
+    # リクエスト間隔（秒）
+    wait_time: 2.0
+    
+    # アセット設定
+    assets:
+      download: true
+      types:
+        - css
+        - js
+        - images
+      css_dir: "assets/css"
+      js_dir: "assets/js"
+      images_dir: "assets/images"
+    
+    # リンク書き換え設定
+    link_rewrite:
+      enabled: true
+      exclude_domains: []
+      fallback: "#"
+    
+    # ページ定義
+    pages:
+      index: "?cmd=top"
+      village_list: "?cmd=vlist"
+      village: "?cmd=vlog&vil=%{village_id}&turn=%{date}"
+      user_list: "?cmd=ulist"
+      user: "?cmd=ulog&uid=%{user_id}"
+      static:
+        - "?cmd=rule"
+        - "?cmd=help"
+    
+    # パスマッピング（URL → ファイルパス）
+    path_mapping:
+      - pattern: '\?cmd=top'
+        path: 'index.html'
+      - pattern: '\?cmd=vlist'
+        path: 'village_list.html'
+      - pattern: '\?cmd=vlog&vil=(\d+)&turn=(\d+)'
+        path: 'villages/%{1}/day%{2}.html'
+      - pattern: '\?cmd=ulist'
+        path: 'users/index.html'
+      - pattern: '\?cmd=ulog&uid=(\d+)'
+        path: 'users/%{1}.html'
+      - pattern: '\?cmd=(\w+)'
+        path: 'static/%{1}.html'
