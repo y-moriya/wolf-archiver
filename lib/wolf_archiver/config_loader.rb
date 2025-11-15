@@ -15,7 +15,7 @@ module WolfArchiver
       
       begin
         @config = YAML.load_file(config_path, permitted_classes: [Symbol])
-      rescue YAML::ParserError => e
+      rescue Psych::SyntaxError, Psych::ParserError => e
         raise ConfigError, "YAMLパースエラー: #{e.message}"
       rescue => e
         raise ConfigError, "設定ファイル読み込み失敗: #{e.message}"
@@ -25,10 +25,11 @@ module WolfArchiver
     end
 
     def site(site_name)
-      site_data = @config.dig('sites', site_name.to_s)
+      sites = @config['sites'] || {}
+      site_data = sites[site_name.to_s]
       
       if site_data.nil?
-        available = @config.dig('sites', {}).keys.join(', ')
+        available = sites.keys.join(', ')
         raise ConfigError, "サイト '#{site_name}' が見つかりません。利用可能: #{available}"
       end
       
@@ -36,7 +37,8 @@ module WolfArchiver
     end
 
     def site_names
-      @config.dig('sites', {}).keys || []
+      sites = @config['sites'] || {}
+      sites.keys || []
     end
 
     private
@@ -86,7 +88,7 @@ module WolfArchiver
         }
       )
       
-      @pages = data['pages'] || {}
+      @pages = (data['pages'] || {}).transform_keys(&:to_sym)
       @path_mapping = data['path_mapping'] || []
       
       validate

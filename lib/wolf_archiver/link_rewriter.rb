@@ -31,15 +31,38 @@ module WolfArchiver
     def rewrite_links(doc, links, current_file_path)
       links.each do |link|
         new_url = rewrite_page_link(link, current_file_path)
-        link.element[link.attribute] = new_url
+        # コピーしたドキュメントから対応する要素を見つける
+        element = find_element_in_doc(doc, link.element)
+        element[link.attribute] = new_url if element
       end
     end
 
     def rewrite_assets(doc, assets, current_file_path)
       assets.each do |asset|
         new_url = rewrite_asset(asset, current_file_path)
-        asset.element[asset.attribute] = new_url
+        # コピーしたドキュメントから対応する要素を見つける
+        element = find_element_in_doc(doc, asset.element)
+        element[asset.attribute] = new_url if element
       end
+    end
+
+    def find_element_in_doc(doc, original_element)
+      # タグ名と属性値で要素を検索
+      tag_name = original_element.name
+      
+      # 主要な属性（href, src）をチェック
+      ['href', 'src'].each do |attr|
+        value = original_element[attr]
+        next unless value
+        
+        # 属性値で要素を検索（エスケープが必要な場合がある）
+        escaped_value = value.gsub("'", "\\'")
+        element = doc.at_css("#{tag_name}[#{attr}='#{escaped_value}']")
+        return element if element
+      end
+      
+      # 見つからない場合はnil
+      nil
     end
 
     def rewrite_page_link(link, current_file_path)
@@ -55,6 +78,9 @@ module WolfArchiver
     end
 
     def rewrite_asset(asset, current_file_path)
+      # 外部アセットはそのまま保持
+      return asset.url if external_asset?(asset.url)
+      
       target_path = @path_mapper.url_to_path(asset.url)
       
       return '#' if target_path.nil?
@@ -62,9 +88,20 @@ module WolfArchiver
       calculate_relative_path(current_file_path, target_path)
     end
 
+    def external_asset?(url)
+      uri = Addressable::URI.parse(url)
+      return false unless uri.host
+      uri.host != @base_domain && !uri.host.end_with?(".#{@base_domain}")
+    rescue
+      false
+    end
+
     def compute_relative_path(from_path, to_path)
       from_path = Pathname.new(from_path).cleanpath.to_s
       to_path = Pathname.new(to_path).cleanpath.to_s
+      
+      # 同じファイルの場合は"."を返す
+      return '.' if from_path == to_path
       
       from_parts = from_path.split('/')
       to_parts = to_path.split('/')

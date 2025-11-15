@@ -11,12 +11,13 @@ module WolfArchiver
 
     def wait
       return unless @enabled
-      return if @last_request_time.nil?
       
-      elapsed = current_time - @last_request_time
-      remaining = @wait_time - elapsed
-      
-      sleep(remaining) if remaining > 0
+      if @last_request_time
+        elapsed = current_time - @last_request_time
+        remaining = @wait_time - elapsed
+        
+        sleep(remaining) if remaining > 0
+      end
       
       @last_request_time = current_time
     end

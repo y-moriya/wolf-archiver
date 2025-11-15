@@ -25,7 +25,7 @@ module WolfArchiver
         inline_assets: inline_assets
       )
     rescue => e
-      raise ParserError, "HTML解析エラー: #{e.message}"
+      raise ParserError.new("HTML解析エラー: #{e.message}", url: current_url, original_error: e)
     end
 
     private
@@ -262,6 +262,16 @@ module WolfArchiver
       @type = type
       @element = element
       @content = content
+    end
+  end
+
+  class ParserError < WolfArchiverError
+    attr_reader :url, :original_error
+
+    def initialize(message, url: nil, original_error: nil)
+      @url = url
+      @original_error = original_error
+      super(message)
     end
   end
 end

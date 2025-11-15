@@ -44,18 +44,21 @@ module WolfArchiver
         return :skipped
       end
       
-      result = @fetcher.fetch_binary(asset.url)
-      
-      unless result.success?
+      begin
+        result = @fetcher.fetch_binary(asset.url)
+        
+        unless result.success?
+          return nil
+        end
+        
+        @storage.save_binary(file_path, result.body)
+        file_path
+      rescue FetchError => e
+        # 404などのHTTPエラーはnilを返す（failedに追加される）
         return nil
+      rescue StorageError => e
+        raise AssetDownloaderError, "アセット保存失敗: #{e.message}"
       end
-      
-      @storage.save_binary(file_path, result.body)
-      file_path
-    rescue FetchError => e
-      raise AssetDownloaderError, "アセット取得失敗: #{e.message}"
-    rescue StorageError => e
-      raise AssetDownloaderError, "アセット保存失敗: #{e.message}"
     end
 
     private

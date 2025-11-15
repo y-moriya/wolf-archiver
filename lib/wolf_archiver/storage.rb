@@ -11,6 +11,8 @@ module WolfArchiver
 
     def save(relative_path, content, encoding: 'UTF-8')
       path = normalize_path(relative_path)
+      raise StorageError.new("パスが空です", path: relative_path) if path.empty?
+      
       full_path = File.join(@base_dir, path)
       
       ensure_directory(full_path)
@@ -18,15 +20,17 @@ module WolfArchiver
       
       full_path
     rescue Errno::EACCES => e
-      raise StorageError, "書き込み権限がありません: #{path}"
+      raise StorageError.new("書き込み権限がありません: #{path}", path: path, original_error: e)
     rescue Errno::ENOSPC => e
-      raise StorageError, "ディスク容量が不足しています: #{path}"
+      raise StorageError.new("ディスク容量が不足しています: #{path}", path: path, original_error: e)
     rescue => e
-      raise StorageError, "保存失敗: #{e.message}"
+      raise StorageError.new("保存失敗: #{e.message}", path: path, original_error: e)
     end
 
     def save_binary(relative_path, content)
       path = normalize_path(relative_path)
+      raise StorageError.new("パスが空です", path: relative_path) if path.empty?
+      
       full_path = File.join(@base_dir, path)
       
       ensure_directory(full_path)
@@ -34,7 +38,7 @@ module WolfArchiver
       
       full_path
     rescue => e
-      raise StorageError, "バイナリ保存失敗: #{e.message}"
+      raise StorageError.new("バイナリ保存失敗: #{e.message}", path: path, original_error: e)
     end
 
     def exist?(relative_path)
@@ -49,8 +53,12 @@ module WolfArchiver
       
       return nil unless File.exist?(full_path)
       
-      File.read(full_path, encoding: encoding)
-    rescue => e
+      if encoding == 'BINARY' || encoding == Encoding::BINARY
+        File.binread(full_path)
+      else
+        File.read(full_path, encoding: encoding)
+      end
+    rescue => _e
       nil
     end
 
@@ -81,6 +89,16 @@ module WolfArchiver
       
       FileUtils.mkdir_p(dir) unless Dir.exist?(dir)
       @created_dirs.add(dir)
+    end
+  end
+
+  class StorageError < WolfArchiverError
+    attr_reader :path, :original_error
+
+    def initialize(message, path: nil, original_error: nil)
+      @path = path
+      @original_error = original_error
+      super(message)
     end
   end
 end

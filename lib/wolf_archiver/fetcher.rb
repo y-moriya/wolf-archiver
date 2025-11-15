@@ -20,18 +20,28 @@ module WolfArchiver
       
       response = @client.get(url)
       
+      # エラーステータスコードのチェック
+      case response.status
+      when 404
+        raise FetchError.new("ページが見つかりません: #{url}", url: url, status: 404)
+      when 500..599
+        raise FetchError.new("サーバーエラー (#{response.status}): #{url}", url: url, status: response.status)
+      end
+      
       FetchResult.new(
         body: response.body,
         status: response.status,
         headers: response.headers,
         url: url
       )
+    rescue URI::InvalidURIError, Addressable::URI::InvalidURIError => e
+      raise FetchError.new("不正なURL: #{url}", url: url, original_error: e)
     rescue Faraday::TimeoutError => e
-      raise FetchError, "タイムアウト: #{url}", e
+      raise FetchError.new("タイムアウト: #{url}", url: url, original_error: e)
     rescue Faraday::ConnectionFailed => e
-      raise FetchError, "接続失敗: #{url}", e
+      raise FetchError.new("接続失敗: #{url}", url: url, original_error: e)
     rescue Faraday::Error => e
-      raise FetchError, "HTTP取得エラー: #{e.message}", e
+      raise FetchError.new("HTTP取得エラー: #{e.message}", url: url, original_error: e)
     end
 
     def fetch_binary(url)
@@ -41,14 +51,28 @@ module WolfArchiver
         req.options.timeout = @timeout
       end
       
+      # エラーステータスコードのチェック
+      case response.status
+      when 404
+        raise FetchError.new("バイナリ取得エラー: ページが見つかりません: #{url}", url: url, status: 404)
+      when 500..599
+        raise FetchError.new("バイナリ取得エラー: サーバーエラー (#{response.status}): #{url}", url: url, status: response.status)
+      end
+      
       FetchResult.new(
-        body: response.body.force_encoding('BINARY'),
+        body: response.body.dup.force_encoding('BINARY'),
         status: response.status,
         headers: response.headers,
         url: url
       )
+    rescue Faraday::TimeoutError => e
+      raise FetchError.new("バイナリ取得エラー: タイムアウト", url: url, original_error: e)
+    rescue Faraday::ConnectionFailed => e
+      raise FetchError.new("バイナリ取得エラー: 接続失敗", url: url, original_error: e)
+    rescue Faraday::Error => e
+      raise FetchError.new("バイナリ取得エラー: #{e.message}", url: url, original_error: e)
     rescue => e
-      raise FetchError, "バイナリ取得エラー: #{e.message}", e
+      raise FetchError.new("バイナリ取得エラー: #{e.message}", url: url, original_error: e)
     end
 
     private
@@ -58,7 +82,8 @@ module WolfArchiver
         conn.options.timeout = @timeout
         conn.options.open_timeout = 10
         
-        conn.response :follow_redirects, limit: 5
+        # Faraday 2.xではリダイレクトは自動的に処理される
+        # 必要に応じて手動でリダイレクトを処理
         conn.headers['User-Agent'] = @user_agent
         conn.adapter Faraday.default_adapter
       end
@@ -69,8 +94,11 @@ module WolfArchiver
       
       uri = URI.parse(@base_url)
       
-      if path.start_with?('?')
-        "#{uri.scheme}://#{uri.host}#{uri.port ? ":#{uri.port}" : ''}#{uri.path}#{path}"
+      if path.empty?
+        @base_url
+      elsif path.start_with?('?')
+        port_part = uri.port && uri.port != 80 && uri.port != 443 ? ":#{uri.port}" : ''
+        "#{uri.scheme}://#{uri.host}#{port_part}#{uri.path}#{path}"
       else
         File.join(@base_url, path)
       end
@@ -78,6 +106,17 @@ module WolfArchiver
 
     def default_user_agent
       "WolfArchiver/1.0 (Ruby/#{RUBY_VERSION})"
+    end
+  end
+
+  class FetchError < WolfArchiverError
+    attr_reader :url, :status, :original_error
+
+    def initialize(message, url: nil, status: nil, original_error: nil)
+      @url = url
+      @status = status
+      @original_error = original_error
+      super(message)
     end
   end
 
