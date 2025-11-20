@@ -6,25 +6,31 @@ require 'faraday'
 module WolfArchiver
   class Fetcher
     def initialize(base_url, rate_limiter, timeout: 30, user_agent: nil)
+      @logger = LoggerConfig.logger('Fetcher')
       @base_url = base_url
       @rate_limiter = rate_limiter
       @timeout = timeout
       @user_agent = user_agent || default_user_agent
       
+      @logger.info("Fetcher初期化: base_url=#{base_url}, timeout=#{timeout}")
       setup_client
     end
 
     def fetch(path)
       url = build_url(path)
+      @logger.debug("HTTPリクエスト開始: #{url}")
       @rate_limiter.wait
       
       response = @client.get(url)
+      @logger.debug("HTTPレスポンス: status=#{response.status}, url=#{url}")
       
       # エラーステータスコードのチェック
       case response.status
       when 404
+        @logger.warn("ページが見つかりません: #{url}")
         raise FetchError.new("ページが見つかりません: #{url}", url: url, status: 404)
       when 500..599
+        @logger.error("サーバーエラー (#{response.status}): #{url}")
         raise FetchError.new("サーバーエラー (#{response.status}): #{url}", url: url, status: response.status)
       end
       
@@ -35,27 +41,36 @@ module WolfArchiver
         url: url
       )
     rescue URI::InvalidURIError, Addressable::URI::InvalidURIError => e
+      @logger.error("不正なURL: #{url} - #{e.message}")
       raise FetchError.new("不正なURL: #{url}", url: url, original_error: e)
     rescue Faraday::TimeoutError => e
+      @logger.error("タイムアウト: #{url}")
       raise FetchError.new("タイムアウト: #{url}", url: url, original_error: e)
     rescue Faraday::ConnectionFailed => e
+      @logger.error("接続失敗: #{url} - #{e.message}")
       raise FetchError.new("接続失敗: #{url}", url: url, original_error: e)
     rescue Faraday::Error => e
+      @logger.error("HTTP取得エラー: #{e.message}")
       raise FetchError.new("HTTP取得エラー: #{e.message}", url: url, original_error: e)
     end
 
     def fetch_binary(url)
+      @logger.debug("バイナリ取得開始: #{url}")
       @rate_limiter.wait
       
       response = @client.get(url) do |req|
         req.options.timeout = @timeout
       end
       
+      @logger.debug("バイナリ取得完了: status=#{response.status}, size=#{response.body.bytesize} bytes")
+      
       # エラーステータスコードのチェック
       case response.status
       when 404
+        @logger.warn("バイナリ取得エラー: ページが見つかりません: #{url}")
         raise FetchError.new("バイナリ取得エラー: ページが見つかりません: #{url}", url: url, status: 404)
       when 500..599
+        @logger.error("バイナリ取得エラー: サーバーエラー (#{response.status}): #{url}")
         raise FetchError.new("バイナリ取得エラー: サーバーエラー (#{response.status}): #{url}", url: url, status: response.status)
       end
       
@@ -66,12 +81,16 @@ module WolfArchiver
         url: url
       )
     rescue Faraday::TimeoutError => e
+      @logger.error("バイナリ取得エラー: タイムアウト - #{url}")
       raise FetchError.new("バイナリ取得エラー: タイムアウト", url: url, original_error: e)
     rescue Faraday::ConnectionFailed => e
+      @logger.error("バイナリ取得エラー: 接続失敗 - #{url}")
       raise FetchError.new("バイナリ取得エラー: 接続失敗", url: url, original_error: e)
     rescue Faraday::Error => e
+      @logger.error("バイナリ取得エラー: #{e.message}")
       raise FetchError.new("バイナリ取得エラー: #{e.message}", url: url, original_error: e)
     rescue => e
+      @logger.error("バイナリ取得エラー: #{e.message}")
       raise FetchError.new("バイナリ取得エラー: #{e.message}", url: url, original_error: e)
     end
 

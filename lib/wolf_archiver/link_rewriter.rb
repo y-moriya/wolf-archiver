@@ -4,20 +4,25 @@
 module WolfArchiver
   class LinkRewriter
     def initialize(base_domain, path_mapper, downloaded_paths)
+      @logger = LoggerConfig.logger('LinkRewriter')
       @base_domain = base_domain
       @path_mapper = path_mapper
       @downloaded_paths = downloaded_paths
       @relative_path_cache = {}
+      @logger.info("LinkRewriter初期化: base_domain=#{base_domain}")
     end
 
     def rewrite(parse_result, current_file_path)
+      @logger.debug("リンク書き換え開始: #{current_file_path}")
       doc = parse_result.document.dup
       
       rewrite_links(doc, parse_result.links, current_file_path)
       rewrite_assets(doc, parse_result.assets, current_file_path)
       
+      @logger.debug("リンク書き換え完了: リンク=#{parse_result.links.size}件, アセット=#{parse_result.assets.size}件")
       doc.to_html
     rescue => e
+      @logger.error("リンク書き換えエラー: #{e.message}")
       raise LinkRewriterError, "リンク書き換えエラー: #{e.message}"
     end
 

@@ -5,6 +5,10 @@ require 'thor'
 
 module WolfArchiver
   class WolfArchiverCLI < Thor
+    def initialize(*args)
+      super
+      @logger = LoggerConfig.logger('CLI')
+    end
     desc 'fetch SITE_NAME', 'サイトをアーカイブ'
     option :output, aliases: '-o', default: './archive', desc: '出力ディレクトリ'
     option :config, aliases: '-c', default: 'config/sites.yml', desc: '設定ファイル'
@@ -15,6 +19,20 @@ module WolfArchiver
     option :villages_only, type: :boolean, default: false, desc: '村のみ'
     option :static_only, type: :boolean, default: false, desc: '静的ページのみ'
     def fetch(site_name)
+      @logger.info("=" * 60)
+      @logger.info("fetch コマンド実行開始")
+      @logger.info("サイト名: #{site_name}")
+      @logger.info("オプション:")
+      @logger.info("  - output: #{options[:output]}")
+      @logger.info("  - config: #{options[:config]}")
+      @logger.info("  - village_ids: #{options[:village_ids]}")
+      @logger.info("  - user_ids: #{options[:user_ids]}")
+      @logger.info("  - auto_discover: #{options[:auto_discover]}")
+      @logger.info("  - users_only: #{options[:users_only]}")
+      @logger.info("  - villages_only: #{options[:villages_only]}")
+      @logger.info("  - static_only: #{options[:static_only]}")
+      @logger.info("=" * 60)
+      
       archiver = WolfArchiver.new(
         site_name: site_name,
         config_path: options[:config],
@@ -29,19 +47,27 @@ module WolfArchiver
         villages_only: options[:villages_only],
         static_only: options[:static_only]
       )
+      
+      @logger.info("fetch コマンド実行完了")
     rescue => e
+      @logger.error("fetch コマンド実行エラー: #{e.message}")
+      @logger.error("バックトレース: #{e.backtrace.first(5).join("\n")}")
       error("エラー: #{e.message}")
       exit 1
     end
 
     desc 'version', 'バージョンを表示'
     def version
+      @logger.info("version コマンド実行")
       puts "WolfArchiver #{VERSION}"
     end
 
     desc 'list', 'サイト一覧を表示'
     option :config, aliases: '-c', default: 'config/sites.yml', desc: '設定ファイル'
     def list
+      @logger.info("list コマンド実行開始")
+      @logger.info("設定ファイル: #{options[:config]}")
+      
       loader = ConfigLoader.new(options[:config])
       
       puts "設定されているサイト:"
@@ -49,7 +75,10 @@ module WolfArchiver
         site = loader.site(name)
         puts "  - #{name}: #{site.name}"
       end
+      
+      @logger.info("list コマンド実行完了（#{loader.site_names.size}件）")
     rescue => e
+      @logger.error("list コマンド実行エラー: #{e.message}")
       error("エラー: #{e.message}")
       exit 1
     end

@@ -6,8 +6,11 @@ require 'tty-progressbar'
 module WolfArchiver
   class WolfArchiver
     def initialize(site_name:, config_path:, output_dir:)
+      @logger = LoggerConfig.logger('WolfArchiver')
       @site_name = site_name
       @output_dir = output_dir
+      
+      @logger.info("WolfArchiver初期化開始: site=#{site_name}, output=#{output_dir}")
       
       @config_loader = ConfigLoader.new(config_path)
       @site_config = @config_loader.site(site_name)
@@ -22,10 +25,22 @@ module WolfArchiver
       }
       
       setup_modules
+      @logger.info("WolfArchiver初期化完了")
     end
 
     def run(village_ids: nil, user_ids: nil, auto_discover: false,
             users_only: false, villages_only: false, static_only: false)
+      @logger.info("=" * 60)
+      @logger.info("アーカイブ処理開始")
+      @logger.info("  - site: #{@site_name}")
+      @logger.info("  - village_ids: #{village_ids}")
+      @logger.info("  - user_ids: #{user_ids}")
+      @logger.info("  - auto_discover: #{auto_discover}")
+      @logger.info("  - users_only: #{users_only}")
+      @logger.info("  - villages_only: #{villages_only}")
+      @logger.info("  - static_only: #{static_only}")
+      @logger.info("=" * 60)
+      
       pages = determine_pages(
         village_ids: village_ids,
         user_ids: user_ids,
@@ -36,16 +51,21 @@ module WolfArchiver
       )
       
       if pages.empty?
+        @logger.warn("ダウンロード対象がありません")
         puts "ダウンロード対象がありません"
         return build_result
       end
       
+      @logger.info("ダウンロード対象: #{pages.size}ページ")
       puts "ダウンロード対象: #{pages.size}ページ"
       process_pages(pages)
       
       @end_time = Time.now
       result = build_result
       
+      @logger.info("=" * 60)
+      @logger.info(result.summary)
+      @logger.info("=" * 60)
       puts "=" * 60
       puts result.summary
       puts "=" * 60
@@ -191,6 +211,7 @@ module WolfArchiver
     end
 
     def process_pages(pages)
+      @logger.info("ページ処理開始: #{pages.size}件")
       progressbar = TTY::ProgressBar.new(
         "[:bar] :current/:total :percent",
         total: pages.size
@@ -200,9 +221,11 @@ module WolfArchiver
       
       pages.each_with_index do |page, index|
         begin
+          @logger.debug("ページ処理: #{page[:url]} => #{page[:path]}")
           process_single_page(page)
           @stats[:pages][:succeeded] += 1
         rescue => e
+          @logger.error("ページ処理エラー: #{page[:url]} - #{e.message}")
           puts "エラー: #{page[:url]} - #{e.message}"
           @stats[:pages][:failed] += 1
         ensure
@@ -212,10 +235,12 @@ module WolfArchiver
       end
       
       progressbar.finish
+      @logger.info("ページ処理完了: 成功=#{@stats[:pages][:succeeded]}, 失敗=#{@stats[:pages][:failed]}")
     end
 
     def process_single_page(page)
       if @storage.exist?(page[:path])
+        @logger.debug("ページスキップ(既存): #{page[:path]}")
         return
       end
       

@@ -4,9 +4,11 @@
 module WolfArchiver
   class Storage
     def initialize(base_dir)
+      @logger = LoggerConfig.logger('Storage')
       @base_dir = base_dir
       @created_dirs = Set.new
       FileUtils.mkdir_p(@base_dir) unless Dir.exist?(@base_dir)
+      @logger.info("Storage初期化: base_dir=#{base_dir}")
     end
 
     def save(relative_path, content, encoding: 'UTF-8')
@@ -14,16 +16,21 @@ module WolfArchiver
       raise StorageError.new("パスが空です", path: relative_path) if path.empty?
       
       full_path = File.join(@base_dir, path)
+      @logger.debug("ファイル保存開始: #{path}")
       
       ensure_directory(full_path)
       File.write(full_path, content, encoding: encoding)
+      @logger.debug("ファイル保存完了: #{path} (#{content.bytesize} bytes)")
       
       full_path
     rescue Errno::EACCES => e
+      @logger.error("書き込み権限エラー: #{path}")
       raise StorageError.new("書き込み権限がありません: #{path}", path: path, original_error: e)
     rescue Errno::ENOSPC => e
+      @logger.error("ディスク容量不足: #{path}")
       raise StorageError.new("ディスク容量が不足しています: #{path}", path: path, original_error: e)
     rescue => e
+      @logger.error("保存失敗: #{path} - #{e.message}")
       raise StorageError.new("保存失敗: #{e.message}", path: path, original_error: e)
     end
 
@@ -32,12 +39,15 @@ module WolfArchiver
       raise StorageError.new("パスが空です", path: relative_path) if path.empty?
       
       full_path = File.join(@base_dir, path)
+      @logger.debug("バイナリ保存開始: #{path}")
       
       ensure_directory(full_path)
       File.binwrite(full_path, content)
+      @logger.debug("バイナリ保存完了: #{path} (#{content.bytesize} bytes)")
       
       full_path
     rescue => e
+      @logger.error("バイナリ保存失敗: #{path} - #{e.message}")
       raise StorageError.new("バイナリ保存失敗: #{e.message}", path: path, original_error: e)
     end
 

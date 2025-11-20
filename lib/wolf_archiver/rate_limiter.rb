@@ -4,9 +4,11 @@
 module WolfArchiver
   class RateLimiter
     def initialize(wait_time, enabled: true)
+      @logger = LoggerConfig.logger('RateLimiter')
       @wait_time = wait_time.to_f
       @enabled = enabled && @wait_time > 0
       @last_request_time = nil
+      @logger.info("RateLimiter初期化: wait_time=#{@wait_time}s, enabled=#{@enabled}")
     end
 
     def wait
@@ -16,7 +18,10 @@ module WolfArchiver
         elapsed = current_time - @last_request_time
         remaining = @wait_time - elapsed
         
-        sleep(remaining) if remaining > 0
+        if remaining > 0
+          @logger.debug("レート制限待機: #{remaining.round(2)}s")
+          sleep(remaining)
+        end
       end
       
       @last_request_time = current_time

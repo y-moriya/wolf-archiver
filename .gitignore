@@ -23,6 +23,8 @@
 !/archive/.gitkeep
 /log/
 *.log
+/logs/
+/spec/examples.txt
 
 # Bundler
 Gemfile.lock

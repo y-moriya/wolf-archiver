@@ -4,14 +4,16 @@
 module WolfArchiver
   class PathMapper
     def initialize(base_url, path_mapping, assets_config)
+      @logger = LoggerConfig.logger('PathMapper')
       @base_url = base_url
       @path_mapping = path_mapping.map do |m|
         {
-          pattern: Regexp.new(m[:pattern]),
-          path_template: m[:path]
+          pattern: Regexp.new(m['pattern']),
+          path_template: m['path']
         }
       end
       @assets_config = assets_config
+      @logger.info("PathMapper初期化: マッピングルール=#{@path_mapping.size}件")
     end
 
     def url_to_path(url)
@@ -20,7 +22,9 @@ module WolfArchiver
       return nil unless same_host?(uri)
       
       if asset_url?(url)
-        return map_asset_path(url)
+        path = map_asset_path(url)
+        @logger.debug("URL→パス変換(アセット): #{url} => #{path}")
+        return path
       end
       
       query = uri.query || ''
@@ -32,10 +36,12 @@ module WolfArchiver
           match.captures.each_with_index do |capture, index|
             path.gsub!("%{#{index + 1}}", capture.to_s)
           end
+          @logger.debug("URL→パス変換(マッピング): #{url} => #{path}")
           return path
         end
       end
       
+      @logger.debug("URL→パス変換失敗: #{url}")
       nil
     end
 

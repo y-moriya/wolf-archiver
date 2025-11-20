@@ -7,16 +7,21 @@ require 'addressable'
 module WolfArchiver
   class Parser
     def initialize(base_url)
+      @logger = LoggerConfig.logger('Parser')
       @base_url = base_url
+      @logger.info("Parser初期化: base_url=#{base_url}")
     end
 
     def parse(html, current_url)
+      @logger.debug("HTML解析開始: #{current_url}")
       doc = Nokogiri::HTML(html, nil, 'UTF-8')
       base = extract_base_url(doc, current_url)
       
       links = extract_links(doc, base)
       assets = extract_assets(doc, base)
       inline_assets = extract_inline_assets(doc, base)
+      
+      @logger.debug("HTML解析完了: リンク=#{links.size}件, アセット=#{assets.size}件, インラインアセット=#{inline_assets.size}件")
       
       ParseResult.new(
         document: doc,
@@ -25,6 +30,7 @@ module WolfArchiver
         inline_assets: inline_assets
       )
     rescue => e
+      @logger.error("HTML解析エラー: #{current_url} - #{e.message}")
       raise ParserError.new("HTML解析エラー: #{e.message}", url: current_url, original_error: e)
     end
 

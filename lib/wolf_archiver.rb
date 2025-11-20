@@ -14,6 +14,7 @@ module WolfArchiver
   VERSION = '1.0.0'
 
   # 各モジュールを読み込む
+  autoload :LoggerConfig,       'wolf_archiver/logger_config'
   autoload :ConfigLoader,       'wolf_archiver/config_loader'
   autoload :EncodingConverter,  'wolf_archiver/encoding_converter'
   autoload :RateLimiter,        'wolf_archiver/rate_limiter'

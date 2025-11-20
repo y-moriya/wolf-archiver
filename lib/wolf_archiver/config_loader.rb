@@ -7,29 +7,39 @@ require 'uri'
 module WolfArchiver
   class ConfigLoader
     def initialize(config_path)
+      @logger = LoggerConfig.logger('ConfigLoader')
       @config_path = config_path
       
+      @logger.info("設定ファイル読み込み開始: #{config_path}")
+      
       unless File.exist?(config_path)
+        @logger.error("設定ファイルが見つかりません: #{config_path}")
         raise ConfigError, "設定ファイルが見つかりません: #{config_path}"
       end
       
       begin
         @config = YAML.load_file(config_path, permitted_classes: [Symbol])
+        @logger.debug("YAMLパース成功")
       rescue Psych::SyntaxError, Psych::ParserError => e
+        @logger.error("YAMLパースエラー: #{e.message}")
         raise ConfigError, "YAMLパースエラー: #{e.message}"
       rescue => e
+        @logger.error("設定ファイル読み込み失敗: #{e.message}")
         raise ConfigError, "設定ファイル読み込み失敗: #{e.message}"
       end
       
       validate_config
+      @logger.info("設定ファイル読み込み完了")
     end
 
     def site(site_name)
+      @logger.debug("サイト設定取得: #{site_name}")
       sites = @config['sites'] || {}
       site_data = sites[site_name.to_s]
       
       if site_data.nil?
         available = sites.keys.join(', ')
+        @logger.error("サイト '#{site_name}' が見つかりません。利用可能: #{available}")
         raise ConfigError, "サイト '#{site_name}' が見つかりません。利用可能: #{available}"
       end
       
@@ -44,15 +54,19 @@ module WolfArchiver
     private
 
     def validate_config
+      @logger.debug("設定ファイル検証開始")
       # 仕様に従った検証処理
       # 現時点では簡略版
       unless @config.is_a?(Hash)
+        @logger.error("設定ファイルがハッシュではありません")
         raise ConfigError, "設定ファイルは YAML ハッシュである必要があります"
       end
       
       unless @config['sites'].is_a?(Hash)
+        @logger.error("sites キーが見つかりません")
         raise ConfigError, "sites キーが見つかりません"
       end
+      @logger.debug("設定ファイル検証完了")
     end
   end
 

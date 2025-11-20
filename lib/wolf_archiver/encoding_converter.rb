@@ -16,19 +16,26 @@ module WolfArchiver
     }.freeze
 
     def self.to_utf8(content, from_encoding)
+      logger = LoggerConfig.logger('EncodingConverter')
       raise ArgumentError, 'content must be a String' unless content.is_a?(String)
       
       normalized_encoding = normalize_encoding(from_encoding)
       validate_encoding(normalized_encoding)
       
+      logger.debug("エンコーディング変換開始: #{normalized_encoding} => UTF-8")
+      
       return content.dup.force_encoding('UTF-8') if normalized_encoding == 'UTF-8'
       
-      content.dup.force_encoding(normalized_encoding)
+      result = content.dup.force_encoding(normalized_encoding)
              .encode('UTF-8', 
                      invalid: :replace,
                      undef: :replace,
                      replace: '?')
+      
+      logger.debug("エンコーディング変換完了: #{content.bytesize} bytes")
+      result
     rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError => e
+      logger.error("エンコーディング変換エラー: #{e.message}")
       raise EncodingError, "エンコーディング変換に失敗しました: #{e.message}"
     end
 

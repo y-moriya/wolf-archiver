@@ -4,17 +4,21 @@
 module WolfArchiver
   class AssetDownloader
     def initialize(fetcher, storage, path_mapper)
+      @logger = LoggerConfig.logger('AssetDownloader')
       @fetcher = fetcher
       @storage = storage
       @path_mapper = path_mapper
+      @logger.info("AssetDownloader初期化")
     end
 
     def download(assets)
+      @logger.info("アセットダウンロード開始: 合計#{assets.size}件")
       succeeded = []
       failed = []
       skipped = []
       
       unique_assets = deduplicate_assets(assets)
+      @logger.debug("重複除去後: #{unique_assets.size}件")
       
       unique_assets.each do |asset|
         begin
@@ -22,16 +26,21 @@ module WolfArchiver
           
           if result == :skipped
             skipped << asset.url
+            @logger.debug("スキップ: #{asset.url}")
           elsif result
             succeeded << result
+            @logger.debug("ダウンロード成功: #{asset.url}")
           else
             failed << { url: asset.url, error: 'Unknown error' }
+            @logger.warn("ダウンロード失敗: #{asset.url}")
           end
         rescue => e
           failed << { url: asset.url, error: e.message, type: asset.type }
+          @logger.error("ダウンロードエラー: #{asset.url} - #{e.message}")
         end
       end
       
+      @logger.info("アセットダウンロード完了: 成功=#{succeeded.size}, 失敗=#{failed.size}, スキップ=#{skipped.size}")
       DownloadResult.new(succeeded: succeeded, failed: failed, skipped: skipped)
     end
 

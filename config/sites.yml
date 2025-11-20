@@ -59,7 +59,7 @@ sites:
     path_mapping:
       - pattern: ''
         path: 'index.html'
-      - pattern: '?cmd=oldlog'
+      - pattern: '\?cmd=oldlog'
         path: 'village_list.html'
       - pattern: '\?vid=(\d+)&turn=(\d+)'
         path: 'villages/%{1}/day%{2}.html'
