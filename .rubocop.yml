@@ -1,0 +1,6 @@
+# Rubocop configuration for wolf-archiver
+
+# Disable Style/FormatStringToken to prevent automatic conversion
+# of %{} style formatting to %<>s style
+Style/FormatStringToken:
+  Enabled: false

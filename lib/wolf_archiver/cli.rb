@@ -18,6 +18,7 @@ module WolfArchiver
     option :users_only, type: :boolean, default: false, desc: 'ユーザーのみ'
     option :villages_only, type: :boolean, default: false, desc: '村のみ'
     option :static_only, type: :boolean, default: false, desc: '静的ページのみ'
+    option :force, aliases: '-f', type: :boolean, default: false, desc: '既存ページを上書き'
     def fetch(site_name)
       @logger.info("=" * 60)
       @logger.info("fetch コマンド実行開始")
@@ -31,6 +32,7 @@ module WolfArchiver
       @logger.info("  - users_only: #{options[:users_only]}")
       @logger.info("  - villages_only: #{options[:villages_only]}")
       @logger.info("  - static_only: #{options[:static_only]}")
+      @logger.info("  - force: #{options[:force]}")
       @logger.info("=" * 60)
       
       archiver = WolfArchiver.new(
@@ -45,7 +47,8 @@ module WolfArchiver
         auto_discover: options[:auto_discover],
         users_only: options[:users_only],
         villages_only: options[:villages_only],
-        static_only: options[:static_only]
+        static_only: options[:static_only],
+        force: options[:force]
       )
       
       @logger.info("fetch コマンド実行完了")

@@ -71,26 +71,54 @@ module WolfArchiver
     end
 
     def rewrite_page_link(link, current_file_path)
-      return link.url if link.external?(@base_domain)
-      return link.url if link.anchor?
+      original_url = link.url
+      
+      if link.external?(@base_domain)
+        @logger.debug("[リンク] 外部リンク: #{original_url} → #{original_url} (変換なし)")
+        return link.url
+      end
+      
+      if link.anchor?
+        @logger.debug("[リンク] アンカー: #{original_url} → #{original_url} (変換なし)")
+        return link.url
+      end
       
       target_path = @path_mapper.url_to_path(link.url)
       
-      return '#' if target_path.nil?
-      return '#' unless @downloaded_paths.include?(target_path)
+      if target_path.nil?
+        @logger.debug("[リンク] パスマッピング失敗: #{original_url} → # (target_path=nil)")
+        return '#'
+      end
       
-      calculate_relative_path(current_file_path, target_path)
+      unless @downloaded_paths.include?(target_path)
+        @logger.debug("[リンク] 未ダウンロード: #{original_url} → # (target_path=#{target_path})")
+        return '#'
+      end
+      
+      new_url = calculate_relative_path(current_file_path, target_path)
+      @logger.debug("[リンク] 変換成功: #{original_url} → #{new_url} (from=#{current_file_path}, to=#{target_path})")
+      new_url
     end
 
     def rewrite_asset(asset, current_file_path)
+      original_url = asset.url
+      
       # 外部アセットはそのまま保持
-      return asset.url if external_asset?(asset.url)
+      if external_asset?(asset.url)
+        @logger.debug("[アセット] 外部アセット: #{original_url} → #{original_url} (変換なし)")
+        return asset.url
+      end
       
       target_path = @path_mapper.url_to_path(asset.url)
       
-      return '#' if target_path.nil?
+      if target_path.nil?
+        @logger.debug("[アセット] パスマッピング失敗: #{original_url} → # (target_path=nil)")
+        return '#'
+      end
       
-      calculate_relative_path(current_file_path, target_path)
+      new_url = calculate_relative_path(current_file_path, target_path)
+      @logger.debug("[アセット] 変換成功: #{original_url} → #{new_url} (from=#{current_file_path}, to=#{target_path})")
+      new_url
     end
 
     def external_asset?(url)

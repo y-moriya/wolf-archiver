@@ -39,7 +39,9 @@ sites:
     pages:
       index: ""
       village_list: "?cmd=oldlog"
+      village_index: "?vid=%{village_id}&mode=all"
       village: "?vid=%{village_id}&turn=%{date}&mode=all"
+      village_info: "?vid=%{village_id}&mode=all&cmd=vinfo"
       # user_list: "?cmd=ulist"
       user: "?prof=%{user_id}"
       static:
@@ -57,13 +59,30 @@ sites:
     
     # パスマッピング（URL → ファイルパス）
     path_mapping:
-      - pattern: ''
+      # パラメータベースのマッピング（新形式）
+      # URLパラメータの順序に依存せず、必要なパラメータで判定
+      - params:
+          vid: '(\d+)'
+          cmd: 'vinfo'
+        path: 'villages/%{vid}/vinfo.html'
+      - params:
+          vid: '(\d+)'
+          mode: 'all'
+        exact: true
+        path: 'villages/%{vid}/index.html'
+      - params:
+          vid: '(\d+)'
+          turn: '(\d+)'
+        path: 'villages/%{vid}/day%{turn}.html'
+      - params:
+          prof: '(\d+)'
+        path: 'users/%{prof}.html'
+      
+      # 正規表現ベースのマッピング（旧形式・後方互換性維持）
+      # パラメータ順序が固定されている場合や、特定のクエリ文字列にマッチさせる場合
+      - pattern: '^$'
         path: 'index.html'
       - pattern: '\?cmd=oldlog'
         path: 'village_list.html'
-      - pattern: '\?vid=(\d+)&turn=(\d+)'
-        path: 'villages/%{1}/day%{2}.html'
-      - pattern: '\?prof=(\d+)'
-        path: 'users/%{1}.html'
       - pattern: '\?cmd=(\w+)'
         path: 'static/%{1}.html'
