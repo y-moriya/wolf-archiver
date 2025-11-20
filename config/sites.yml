@@ -5,12 +5,12 @@
 
 sites:
   # サイト識別子（英数字とアンダースコアのみ）
-  sample_site:
+  sow_europe:
     # 表示名
-    name: "サンプル人狼サイト"
+    name: "人狼物語＠欧州"
     
     # ベースURL
-    base_url: "http://example.com/wolf.cgi"
+    base_url: "https://euros.sakura.ne.jp/sow/sow.cgi"
     
     # 文字エンコーディング（Shift_JIS, EUC-JP, UTF-8）
     encoding: "Shift_JIS"
@@ -37,26 +37,33 @@ sites:
     
     # ページ定義
     pages:
-      index: "?cmd=top"
-      village_list: "?cmd=vlist"
-      village: "?cmd=vlog&vil=%{village_id}&turn=%{date}"
-      user_list: "?cmd=ulist"
-      user: "?cmd=ulog&uid=%{user_id}"
+      index: ""
+      village_list: "?cmd=oldlog"
+      village: "?vid=%{village_id}&turn=%{date}&mode=all"
+      # user_list: "?cmd=ulist"
+      user: "?prof=%{user_id}"
       static:
-        - "?cmd=rule"
-        - "?cmd=help"
+        - "?cmd=about"
+        - "?cmd=howto"
+        - "?cmd=operate"
+        - "?cmd=spec"
+        - "?cmd=rolematrix"
+        - "?cmd=rolelist"
+        - "?cmd=prohibit"
+        - "?cmd=chrlist&csid=sow"
+        - "?cmd=chrlist&csid=rem"
+        - "?cmd=chrlist&csid=imas"
+        - "?cmd=changelog"
     
     # パスマッピング（URL → ファイルパス）
     path_mapping:
-      - pattern: '\?cmd=top'
+      - pattern: ''
         path: 'index.html'
-      - pattern: '\?cmd=vlist'
+      - pattern: '?cmd=oldlog'
         path: 'village_list.html'
-      - pattern: '\?cmd=vlog&vil=(\d+)&turn=(\d+)'
+      - pattern: '\?vid=(\d+)&turn=(\d+)'
         path: 'villages/%{1}/day%{2}.html'
-      - pattern: '\?cmd=ulist'
-        path: 'users/index.html'
-      - pattern: '\?cmd=ulog&uid=(\d+)'
+      - pattern: '\?prof=(\d+)'
         path: 'users/%{1}.html'
       - pattern: '\?cmd=(\w+)'
         path: 'static/%{1}.html'
