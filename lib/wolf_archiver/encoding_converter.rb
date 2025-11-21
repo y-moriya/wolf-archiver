@@ -18,20 +18,22 @@ module WolfArchiver
     def self.to_utf8(content, from_encoding)
       logger = LoggerConfig.logger('EncodingConverter')
       raise ArgumentError, 'content must be a String' unless content.is_a?(String)
-      
+
       normalized_encoding = normalize_encoding(from_encoding)
       validate_encoding(normalized_encoding)
-      
+
       logger.debug("エンコーディング変換開始: #{normalized_encoding} => UTF-8")
-      
-      return content.dup.force_encoding('UTF-8') if normalized_encoding == 'UTF-8'
-      
+
+      if normalized_encoding == 'UTF-8'
+        return content.dup.force_encoding('UTF-8').encode('UTF-8', invalid: :replace, undef: :replace, replace: '?')
+      end
+
       result = content.dup.force_encoding(normalized_encoding)
-             .encode('UTF-8', 
-                     invalid: :replace,
-                     undef: :replace,
-                     replace: '?')
-      
+                      .encode('UTF-8',
+                              invalid: :replace,
+                              undef: :replace,
+                              replace: '?')
+
       logger.debug("エンコーディング変換完了: #{content.bytesize} bytes")
       result
     rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError => e
@@ -43,17 +45,17 @@ module WolfArchiver
       SUPPORTED_ENCODINGS.values.uniq
     end
 
-    private
-
     def self.normalize_encoding(encoding)
       normalized = encoding.to_s.downcase.gsub(/[-_]/, '')
       SUPPORTED_ENCODINGS[normalized] || encoding
     end
+    private_class_method :normalize_encoding
 
     def self.validate_encoding(encoding)
       Encoding.find(encoding)
     rescue ArgumentError
       raise EncodingError, "未サポートのエンコーディング: #{encoding}"
     end
+    private_class_method :validate_encoding
   end
 end

@@ -84,6 +84,7 @@ RSpec.describe WolfArchiver::WolfArchiver do
       allow(link_rewriter).to receive(:rewrite).and_return('rewritten html')
       allow(storage).to receive(:exist?).and_return(false)
       allow(storage).to receive(:save)
+      allow(path_mapper).to receive(:url_to_path).and_return(nil)
     end
 
     context 'with default options' do
@@ -186,6 +187,31 @@ RSpec.describe WolfArchiver::WolfArchiver do
         subject.run
 
         expect(asset_downloader).to have_received(:download).with(assets).at_least(:once)
+      end
+    end
+
+    describe '#discover_village_ids' do
+      let(:village_list_html) do
+        <<~HTML
+          <html>
+            <body>
+              <a href="?cmd=vlog&vid=1&turn=0">Village 1</a>
+              <a href="?cmd=vlog&vid=2&turn=0">Village 2</a>
+              <a href="?cmd=other">Other Link</a>
+              <a href="?vid=3&cmd=vlog">Village 3</a>
+            </body>
+          </html>
+        HTML
+      end
+
+      before do
+        allow(fetcher).to receive(:fetch).with("#{base_url}?cmd=vlist")
+                                         .and_return(double(success?: true, body: village_list_html, status: 200))
+      end
+
+      it 'extracts village IDs from links' do
+        ids = subject.send(:discover_village_ids)
+        expect(ids).to eq([1, 2, 3])
       end
     end
   end

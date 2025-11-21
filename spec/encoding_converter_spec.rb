@@ -32,6 +32,16 @@ RSpec.describe WolfArchiver::EncodingConverter do
         expect(result).to eq('あいうえお')
       end
 
+      it 'UTF-8として指定されたが不正なバイト列を含む場合は置換される' do
+        # Shift_JISの「あ」(\x82\xA0)はUTF-8としては不正
+        invalid_utf8 = "\x82\xA0".dup.force_encoding('UTF-8')
+        result = described_class.to_utf8(invalid_utf8, 'UTF-8')
+
+        expect(result.encoding).to eq(Encoding::UTF_8)
+        expect(result.valid_encoding?).to be true
+        expect(result).to eq('??')
+      end
+
       it '空文字列の処理ができる' do
         result = described_class.to_utf8('', 'Shift_JIS')
 
@@ -41,7 +51,7 @@ RSpec.describe WolfArchiver::EncodingConverter do
 
       it 'エンコーディング名の正規化（大文字小文字）ができる' do
         sjis_content = "\x82\xA0".dup.force_encoding('Shift_JIS')
-        
+
         expect(described_class.to_utf8(sjis_content.dup, 'shift_jis')).to eq('あ')
         expect(described_class.to_utf8(sjis_content.dup, 'SHIFT_JIS')).to eq('あ')
         expect(described_class.to_utf8(sjis_content.dup, 'Shift_JIS')).to eq('あ')
@@ -50,7 +60,7 @@ RSpec.describe WolfArchiver::EncodingConverter do
       it 'エンコーディング名の正規化（ハイフン）ができる' do
         # EUC-JPの「ア」は \xA5\xA2
         euc_content = "\xA5\xA2".dup.force_encoding('EUC-JP')
-        
+
         expect(described_class.to_utf8(euc_content.dup, 'euc-jp')).to eq('ア')
         expect(described_class.to_utf8(euc_content.dup, 'eucjp')).to eq('ア')
       end
@@ -104,15 +114,15 @@ RSpec.describe WolfArchiver::EncodingConverter do
         content = 'test'
 
         # ISO-8859-1はRubyでサポートされているため、実際に未サポートのエンコーディングを使用
-        expect {
+        expect do
           described_class.to_utf8(content, 'INVALID-ENCODING-12345')
-        }.to raise_error(WolfArchiver::EncodingError, /未サポートのエンコーディング/)
+        end.to raise_error(WolfArchiver::EncodingError, /未サポートのエンコーディング/)
       end
 
       it 'nilを渡す場合は ArgumentError を発生させる' do
-        expect {
+        expect do
           described_class.to_utf8(nil, 'UTF-8')
-        }.to raise_error(ArgumentError, /content must be a String/)
+        end.to raise_error(ArgumentError, /content must be a String/)
       end
 
       it '完全に不正なバイト列の場合は置換される（エラーにはならない）' do
@@ -169,4 +179,3 @@ RSpec.describe WolfArchiver::EncodingConverter do
     end
   end
 end
-

@@ -91,7 +91,6 @@ module WolfArchiver
         timeout: 30
       )
 
-      base_domain = URI.parse(@site_config.base_url).host
       @parser = Parser.new(@site_config.base_url)
 
       @path_mapper = PathMapper.new(
@@ -293,7 +292,19 @@ module WolfArchiver
 
       @site_config.pages[:static]&.each do |query|
         url = "#{@site_config.base_url}#{query}"
-        path = "static/#{query.match(/cmd=(\w+)/)[1]}.html"
+
+        # PathMapperを使用してパスを決定
+        path = @path_mapper.url_to_path(url)
+
+        # マッピングが見つからない場合は、従来の簡易ロジックを使用
+        unless path
+          if (match = query.match(/cmd=(\w+)/))
+            path = "static/#{match[1]}.html"
+          else
+            @logger.warn("静的ページのパスを決定できませんでした: #{url}")
+            next
+          end
+        end
 
         pages << { url: url, path: path }
       end
@@ -302,11 +313,39 @@ module WolfArchiver
     end
 
     def discover_village_ids
-      []  # 簡略版
+      query = @site_config.pages[:village_list]
+      unless query
+        @logger.warn('自動検出スキップ: village_listページが設定されていません')
+        return []
+      end
+
+      url = "#{@site_config.base_url}#{query}"
+      @logger.info("村ID自動検出開始: #{url}")
+
+      result = @fetcher.fetch(url)
+      unless result.success?
+        @logger.error("村リストの取得に失敗: #{result.status}")
+        return []
+      end
+
+      utf8_html = EncodingConverter.to_utf8(result.body, @site_config.encoding)
+      doc = Nokogiri::HTML(utf8_html)
+
+      village_ids = Set.new
+      doc.css('a').each do |link|
+        href = link['href']
+        next unless href
+
+        village_ids.add(::Regexp.last_match(1).to_i) if href.match(/vid=(\d+)/)
+      end
+
+      sorted_ids = village_ids.to_a.sort
+      @logger.info("村ID自動検出完了: #{sorted_ids.size}件検出 (#{sorted_ids.join(', ')})")
+      sorted_ids
     end
 
     def discover_user_ids
-      []  # 簡略版
+      [] # 簡略版
     end
 
     def process_pages(pages, force: false)
@@ -318,7 +357,7 @@ module WolfArchiver
 
       pages.each { |page| @downloaded_paths.add(page[:path]) }
 
-      pages.each_with_index do |page, index|
+      pages.each_with_index do |page, _index|
         @logger.debug("ページ処理: #{page[:url]} => #{page[:path]}")
         process_single_page(page, force: force)
         @stats[:pages][:succeeded] += 1
