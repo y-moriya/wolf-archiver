@@ -3,24 +3,29 @@
 
 module WolfArchiver
   class PathMapper
-    def initialize(base_url, path_mapping, assets_config)
+    def initialize(base_url, path_mapping)
       @logger = LoggerConfig.logger('PathMapper')
       @base_url = base_url
       @path_mapping = path_mapping.map do |m|
-        mapping = { path_template: m['path'] }
+        # シンボルと文字列の両方のキーに対応
+        path = m['path'] || m[:path]
+        params = m['params'] || m[:params]
+        pattern = m['pattern'] || m[:pattern]
+        exact = m['exact'] || m[:exact]
+
+        mapping = { path_template: path }
 
         # パラメータベースのマッピング（新形式）
-        if m['params']
-          mapping[:params] = m['params'].transform_keys(&:to_sym)
-          mapping[:exact] = m['exact'] || false # exactフラグ: 指定したパラメータのみを含む場合にマッチ
+        if params
+          mapping[:params] = params.transform_keys(&:to_sym)
+          mapping[:exact] = exact || false # exactフラグ: 指定したパラメータのみを含む場合にマッチ
         # 正規表現ベースのマッピング（旧形式）
-        elsif m['pattern']
-          mapping[:pattern] = Regexp.new(m['pattern'])
+        elsif pattern
+          mapping[:pattern] = Regexp.new(pattern)
         end
 
         mapping
       end
-      @assets_config = assets_config
       @logger.info("PathMapper初期化: マッピングルール=#{@path_mapping.size}件")
     end
 
@@ -143,9 +148,10 @@ module WolfArchiver
 
       # ベースディレクトリを除去して相対パスを取得
       # 例: /sow/img/icon.png → img/icon.png
+      # 例: http://example.com/style.css → style.css
       relative_path = uri.path.sub(%r{^#{Regexp.escape(base_dir)}/}, '')
 
-      # 念のため先頭のスラッシュを除去
+      # 先頭のスラッシュを除去
       relative_path.sub(%r{^/}, '')
     end
   end

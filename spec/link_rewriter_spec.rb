@@ -4,7 +4,6 @@ require 'spec_helper'
 require 'wolf_archiver/link_rewriter'
 require 'wolf_archiver/path_mapper'
 require 'wolf_archiver/parser'
-require 'set'
 
 RSpec.describe WolfArchiver::LinkRewriter do
   let(:base_domain) { 'example.com' }
@@ -15,14 +14,8 @@ RSpec.describe WolfArchiver::LinkRewriter do
       { pattern: '\?cmd=vlog&vil=(\d+)&turn=(\d+)', path: 'villages/%{1}/day%{2}.html' }
     ]
   end
-  let(:assets_config) do
-    {
-      css_dir: 'assets/css',
-      js_dir: 'assets/js',
-      images_dir: 'assets/images'
-    }
-  end
-  let(:path_mapper) { WolfArchiver::PathMapper.new(base_url, path_mapping, assets_config) }
+
+  let(:path_mapper) { WolfArchiver::PathMapper.new(base_url, path_mapping) }
   let(:downloaded_paths) { Set.new(['index.html', 'villages/1/day1.html', 'villages/1/day2.html']) }
   let(:rewriter) { described_class.new(base_domain, path_mapper, downloaded_paths) }
   let(:parser) { WolfArchiver::Parser.new(base_url) }
@@ -36,9 +29,9 @@ RSpec.describe WolfArchiver::LinkRewriter do
       end
 
       it '下の階層へのパスを正しく計算できる' do
-        result = rewriter.calculate_relative_path('index.html', 'assets/css/style.css')
+        result = rewriter.calculate_relative_path('index.html', 'style.css')
 
-        expect(result).to eq('assets/css/style.css')
+        expect(result).to eq('style.css')
       end
 
       it '上の階層へのパスを正しく計算できる' do
@@ -48,9 +41,9 @@ RSpec.describe WolfArchiver::LinkRewriter do
       end
 
       it '異なる階層間のパスを正しく計算できる' do
-        result = rewriter.calculate_relative_path('villages/1/day1.html', 'assets/css/style.css')
+        result = rewriter.calculate_relative_path('villages/1/day1.html', 'style.css')
 
-        expect(result).to eq('../../assets/css/style.css')
+        expect(result).to eq('../../style.css')
       end
 
       it '深い階層のパスを正しく計算できる' do
@@ -208,7 +201,7 @@ RSpec.describe WolfArchiver::LinkRewriter do
 
         doc = Nokogiri::HTML(result)
         link = doc.at_css('link[rel="stylesheet"]')
-        expect(link['href']).to eq('../../assets/css/style.css')
+        expect(link['href']).to eq('../../style.css')
       end
 
       it 'JavaScriptファイルを相対パスに書き換える' do
@@ -220,7 +213,7 @@ RSpec.describe WolfArchiver::LinkRewriter do
 
         doc = Nokogiri::HTML(result)
         script = doc.at_css('script[src]')
-        expect(script['src']).to eq('assets/js/script.js')
+        expect(script['src']).to eq('script.js')
       end
 
       it '画像ファイルを相対パスに書き換える' do
@@ -232,7 +225,7 @@ RSpec.describe WolfArchiver::LinkRewriter do
 
         doc = Nokogiri::HTML(result)
         img = doc.at_css('img[src]')
-        expect(img['src']).to eq('assets/images/icon.png')
+        expect(img['src']).to eq('icon.png')
       end
 
       it 'マッピング不可のアセットを#に書き換える' do
@@ -280,9 +273,9 @@ RSpec.describe WolfArchiver::LinkRewriter do
         css = doc.at_css('link[rel="stylesheet"]')
         js = doc.at_css('script[src]')
         img = doc.at_css('img[src]')
-        expect(css['href']).to eq('../../assets/css/style.css')
-        expect(js['src']).to eq('../../assets/js/script.js')
-        expect(img['src']).to eq('../../assets/images/icon.png')
+        expect(css['href']).to eq('../../style.css')
+        expect(js['src']).to eq('../../script.js')
+        expect(img['src']).to eq('../../icon.png')
       end
     end
 
@@ -294,9 +287,9 @@ RSpec.describe WolfArchiver::LinkRewriter do
         allow(parse_result).to receive(:links).and_return([])
         allow(parse_result).to receive(:assets).and_return([])
 
-        expect {
+        expect do
           rewriter.rewrite(parse_result, 'index.html')
-        }.to raise_error(WolfArchiver::LinkRewriterError, /リンク書き換えエラー/)
+        end.to raise_error(WolfArchiver::LinkRewriterError, /リンク書き換えエラー/)
       end
 
       it '元のドキュメントが変更されない' do
@@ -316,20 +309,20 @@ RSpec.describe WolfArchiver::LinkRewriter do
         html = '<html><body><p>テキストのみ</p></body></html>'
         parse_result = parser.parse(html, base_url)
 
-        expect {
+        expect do
           result = rewriter.rewrite(parse_result, 'index.html')
           expect(result).to be_a(String)
-        }.not_to raise_error
+        end.not_to raise_error
       end
 
       it 'アセットがないHTMLでも動作する' do
         html = '<html><body><p>テキストのみ</p></body></html>'
         parse_result = parser.parse(html, base_url)
 
-        expect {
+        expect do
           result = rewriter.rewrite(parse_result, 'index.html')
           expect(result).to be_a(String)
-        }.not_to raise_error
+        end.not_to raise_error
       end
 
       it 'クエリパラメータを含むURLを正しく処理する' do
@@ -364,4 +357,3 @@ RSpec.describe WolfArchiver::LinkRewriter do
     end
   end
 end
-

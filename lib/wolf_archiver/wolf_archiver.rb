@@ -96,8 +96,7 @@ module WolfArchiver
 
       @path_mapper = PathMapper.new(
         @site_config.base_url,
-        @site_config.path_mapping,
-        @site_config.assets
+        @site_config.path_mapping
       )
 
       @asset_downloader = AssetDownloader.new(
@@ -228,7 +227,7 @@ module WolfArchiver
       doc = Nokogiri::HTML(utf8_html)
 
       # 日数選択のセレクトボックスから最小・最大日数を取得
-      min_day = 0
+      min_day = Float::INFINITY
       max_day = -Float::INFINITY
 
       # select_options_count = 0

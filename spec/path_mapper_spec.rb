@@ -14,22 +14,15 @@ RSpec.describe WolfArchiver::PathMapper do
       { pattern: '\?cmd=(\w+)', path: 'static/%{1}.html' }
     ]
   end
-  let(:assets_config) do
-    {
-      css_dir: 'assets/css',
-      js_dir: 'assets/js',
-      images_dir: 'assets/images'
-    }
-  end
-  let(:mapper) { described_class.new(base_url, path_mapping, assets_config) }
+  let(:mapper) { described_class.new(base_url, path_mapping) }
 
   describe '#initialize' do
-    it 'base_url、path_mapping、assets_configを設定できる' do
+    it 'base_urlとpath_mappingを設定できる' do
       expect(mapper).to be_a(described_class)
     end
 
     it 'path_mappingを正規表現にコンパイルする' do
-      mapper = described_class.new(base_url, path_mapping, assets_config)
+      mapper = described_class.new(base_url, path_mapping)
 
       # 正規表現が正しくコンパイルされていることを確認
       result = mapper.url_to_path('http://example.com/wolf.cgi?cmd=top')
@@ -75,43 +68,43 @@ RSpec.describe WolfArchiver::PathMapper do
       it 'CSSファイルをマッピングできる' do
         result = mapper.url_to_path('http://example.com/style.css')
 
-        expect(result).to eq('assets/css/style.css')
+        expect(result).to eq('style.css')
       end
 
       it 'JavaScriptファイルをマッピングできる' do
         result = mapper.url_to_path('http://example.com/app.js')
 
-        expect(result).to eq('assets/js/app.js')
+        expect(result).to eq('app.js')
       end
 
       it 'PNG画像をマッピングできる' do
         result = mapper.url_to_path('http://example.com/icon.png')
 
-        expect(result).to eq('assets/images/icon.png')
+        expect(result).to eq('icon.png')
       end
 
       it 'JPG画像をマッピングできる' do
         result = mapper.url_to_path('http://example.com/image.jpg')
 
-        expect(result).to eq('assets/images/image.jpg')
+        expect(result).to eq('image.jpg')
       end
 
       it 'GIF画像をマッピングできる' do
         result = mapper.url_to_path('http://example.com/animation.gif')
 
-        expect(result).to eq('assets/images/animation.gif')
+        expect(result).to eq('animation.gif')
       end
 
       it 'SVG画像をマッピングできる' do
         result = mapper.url_to_path('http://example.com/logo.svg')
 
-        expect(result).to eq('assets/images/logo.svg')
+        expect(result).to eq('logo.svg')
       end
 
       it 'サブディレクトリ内のアセットをマッピングできる' do
         result = mapper.url_to_path('http://example.com/images/bg.png')
 
-        expect(result).to eq('assets/images/bg.png')
+        expect(result).to eq('images/bg.png')
       end
     end
 
@@ -160,7 +153,7 @@ RSpec.describe WolfArchiver::PathMapper do
           { pattern: '\?cmd=(\w+)', path: 'static/%{1}.html' },
           { pattern: '\?cmd=top', path: 'index.html' }
         ]
-        mapper = described_class.new(base_url, specific_mapping, assets_config)
+        mapper = described_class.new(base_url, specific_mapping)
 
         result = mapper.url_to_path('http://example.com/wolf.cgi?cmd=top')
 
@@ -183,36 +176,30 @@ RSpec.describe WolfArchiver::PathMapper do
   end
 
   describe 'アセットマッピング' do
-    it 'CSSディレクトリに正しく配置される' do
+    it 'URLのディレクトリ構造が保持される（CSS）' do
       result = mapper.url_to_path('http://example.com/styles/main.css')
 
-      expect(result).to eq('assets/css/main.css')
+      expect(result).to eq('styles/main.css')
     end
 
-    it 'JSディレクトリに正しく配置される' do
+    it 'URLのディレクトリ構造が保持される（JS）' do
       result = mapper.url_to_path('http://example.com/scripts/app.js')
 
-      expect(result).to eq('assets/js/app.js')
+      expect(result).to eq('scripts/app.js')
     end
 
-    it '画像ディレクトリに正しく配置される' do
+    it 'URLのディレクトリ構造が保持される（画像）' do
       result = mapper.url_to_path('http://example.com/pics/photo.jpg')
 
-      expect(result).to eq('assets/images/photo.jpg')
+      expect(result).to eq('pics/photo.jpg')
     end
 
-    it 'カスタムアセット設定を使用できる' do
-      custom_config = {
-        css_dir: 'custom/css',
-        js_dir: 'custom/js',
-        images_dir: 'custom/images'
-      }
-      mapper = described_class.new(base_url, [], custom_config)
+    it 'URLのディレクトリ構造が維持される' do
+      mapper = described_class.new(base_url, [])
 
       result = mapper.url_to_path('http://example.com/style.css')
 
-      expect(result).to eq('custom/css/style.css')
+      expect(result).to eq('style.css')
     end
   end
 end
-

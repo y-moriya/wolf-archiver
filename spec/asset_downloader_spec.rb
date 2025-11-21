@@ -26,7 +26,7 @@ RSpec.describe WolfArchiver::AssetDownloader do
       images_dir: 'assets/images'
     }
   end
-  let(:path_mapper) { WolfArchiver::PathMapper.new(base_url, path_mapping, assets_config) }
+  let(:path_mapper) { WolfArchiver::PathMapper.new(base_url, path_mapping) }
   let(:downloader) { described_class.new(fetcher, storage, path_mapper) }
   let(:parser) { WolfArchiver::Parser.new(base_url) }
 
@@ -47,11 +47,11 @@ RSpec.describe WolfArchiver::AssetDownloader do
         result = downloader.download(assets)
 
         expect(result.succeeded.size).to eq(1)
-        expect(result.succeeded.first).to eq('assets/css/style.css')
+        expect(result.succeeded.first).to eq('style.css')
         expect(result.failed.size).to eq(0)
         expect(result.skipped.size).to eq(0)
-        expect(storage.exist?('assets/css/style.css')).to be true
-        expect(storage.read('assets/css/style.css')).to eq('body { color: red; }')
+        expect(storage.exist?('style.css')).to be true
+        expect(storage.read('style.css')).to eq('body { color: red; }')
       end
 
       it '複数のアセットをダウンロードできる' do
@@ -81,9 +81,9 @@ RSpec.describe WolfArchiver::AssetDownloader do
         expect(result.succeeded.size).to eq(3)
         expect(result.failed.size).to eq(0)
         expect(result.skipped.size).to eq(0)
-        expect(storage.exist?('assets/css/style.css')).to be true
-        expect(storage.exist?('assets/js/script.js')).to be true
-        expect(storage.exist?('assets/images/icon.png')).to be true
+        expect(storage.exist?('style.css')).to be true
+        expect(storage.exist?('script.js')).to be true
+        expect(storage.exist?('icon.png')).to be true
       end
 
       it '重複URLを除去してダウンロードする' do
@@ -113,7 +113,7 @@ RSpec.describe WolfArchiver::AssetDownloader do
         assets = parse_result.assets
 
         # 事前にファイルを作成
-        storage.save_binary('assets/css/style.css', 'existing content')
+        storage.save_binary('style.css', 'existing content')
 
         result = downloader.download(assets)
 
@@ -188,7 +188,7 @@ RSpec.describe WolfArchiver::AssetDownloader do
 
         expect(result.succeeded.size).to eq(1)
         expect(result.failed.size).to eq(1)
-        expect(storage.exist?('assets/css/style.css')).to be true
+        expect(storage.exist?('style.css')).to be true
       end
     end
 
@@ -210,7 +210,7 @@ RSpec.describe WolfArchiver::AssetDownloader do
         assets = parse_result.assets
 
         # 事前にファイルを作成
-        storage.save_binary('assets/css/style.css', 'existing content')
+        storage.save_binary('style.css', 'existing content')
 
         result = downloader.download(assets)
 
@@ -233,7 +233,7 @@ RSpec.describe WolfArchiver::AssetDownloader do
         result = downloader.download(assets)
 
         expect(result.succeeded.size).to eq(1)
-        saved_data = storage.read('assets/images/image.png', encoding: 'BINARY')
+        saved_data = storage.read('image.png', encoding: 'BINARY')
         expect(saved_data.encoding).to eq(Encoding::BINARY)
         # バイナリデータが正しく保存されていることを確認
         expect(saved_data).to eq(binary_data)
@@ -254,9 +254,9 @@ RSpec.describe WolfArchiver::AssetDownloader do
 
         result = downloader.download_single(asset)
 
-        expect(result).to eq('assets/css/style.css')
-        expect(storage.exist?('assets/css/style.css')).to be true
-        expect(storage.read('assets/css/style.css')).to eq('body { color: red; }')
+        expect(result).to eq('style.css')
+        expect(storage.exist?('style.css')).to be true
+        expect(storage.read('style.css')).to eq('body { color: red; }')
       end
 
       it '既存ファイルの場合は:skippedを返す' do
@@ -265,7 +265,7 @@ RSpec.describe WolfArchiver::AssetDownloader do
         asset = parse_result.assets.first
 
         # 事前にファイルを作成
-        storage.save_binary('assets/css/style.css', 'existing content')
+        storage.save_binary('style.css', 'existing content')
 
         result = downloader.download_single(asset)
 
@@ -331,7 +331,7 @@ RSpec.describe WolfArchiver::AssetDownloader do
   describe 'DownloadResult' do
     let(:result) do
       WolfArchiver::DownloadResult.new(
-        succeeded: ['assets/css/style.css', 'assets/js/script.js'],
+        succeeded: ['style.css', 'script.js'],
         failed: [{ url: 'http://example.com/missing.png', error: '404 Not Found' }],
         skipped: ['http://example.com/existing.png']
       )
