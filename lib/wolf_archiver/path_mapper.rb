@@ -136,19 +136,17 @@ module WolfArchiver
 
     def map_asset_path(url)
       uri = URI.parse(url)
-      filename = File.basename(uri.path)
-      ext = File.extname(filename).downcase
+      base_uri = URI.parse(@base_url)
 
-      dir = case ext
-            when '.css'
-              @assets_config[:css_dir]
-            when '.js'
-              @assets_config[:js_dir]
-            else
-              @assets_config[:images_dir]
-            end
+      # ベースURLのディレクトリ部分を取得（例: /sow/sow.cgi → /sow）
+      base_dir = File.dirname(base_uri.path)
 
-      File.join(dir, filename)
+      # ベースディレクトリを除去して相対パスを取得
+      # 例: /sow/img/icon.png → img/icon.png
+      relative_path = uri.path.sub(%r{^#{Regexp.escape(base_dir)}/}, '')
+
+      # 念のため先頭のスラッシュを除去
+      relative_path.sub(%r{^/}, '')
     end
   end
 end

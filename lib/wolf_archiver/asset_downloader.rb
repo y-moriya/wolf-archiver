@@ -87,7 +87,7 @@ module WolfArchiver
       else
         download_binary_asset(asset, file_path)
       end
-    rescue FetchError => e
+    rescue FetchError
       # 404などのHTTPエラーはnilを返す（failedに追加される）
       nil
     rescue StorageError => e
@@ -114,8 +114,11 @@ module WolfArchiver
         @css_discovered_urls.concat(discovered_urls)
       end
 
+      # CSS内のURLを相対パスに書き換え
+      rewritten_content = rewrite_css_urls(utf8_content, asset.url, file_path)
+
       # UTF-8テキストとして保存
-      @storage.save(file_path, utf8_content)
+      @storage.save(file_path, rewritten_content)
       @logger.info("CSS保存完了: #{file_path}")
       file_path
     end
@@ -194,6 +197,36 @@ module WolfArchiver
       uri.to_s
     rescue StandardError
       url
+    end
+
+    def rewrite_css_urls(css_content, css_url, css_file_path)
+      # CSS内のurl(...)を相対パスに書き換える
+      css_content.gsub(/url\s*\(\s*(['"]?)(.+?)\1\s*\)/i) do |match|
+        quote = Regexp.last_match(1)
+        url = Regexp.last_match(2).strip
+
+        # data: URLやフラグメントはそのまま
+        if url.start_with?('data:', '#')
+          match
+        else
+          # 相対URLも含めて絶対URLに解決
+          absolute_url = resolve_url(url, css_url)
+          next match unless absolute_url
+
+          # ローカルパスに変換
+          local_path = @path_mapper.url_to_path(absolute_url)
+          next match unless local_path
+
+          # CSS位置から画像への相対パスを計算
+          css_dir = File.dirname(css_file_path)
+          relative_path = Pathname.new(local_path).relative_path_from(Pathname.new(css_dir)).to_s
+
+          # パス区切りを/に統一（Windows対応）
+          relative_path = relative_path.tr('\\', '/')
+
+          "url(#{quote}#{relative_path}#{quote})"
+        end
+      end
     end
 
     def deduplicate_assets(assets)

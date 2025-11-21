@@ -177,6 +177,24 @@ module WolfArchiver
           path = "villages/#{village_id}/day#{day}.html"
 
           pages << { url: url, path: path }
+
+          # メモページを追加
+          if (memo_query = @site_config.pages[:village_memo])
+            memo_query = memo_query.gsub('%{village_id}', village_id.to_s)
+                                   .gsub('%{date}', day.to_s)
+            memo_url = "#{@site_config.base_url}#{memo_query}"
+            memo_path = "villages/#{village_id}/day#{day}memo.html"
+            pages << { url: memo_url, path: memo_path }
+          end
+
+          # 履歴ページを追加
+          next unless (hist_query = @site_config.pages[:village_hist])
+
+          hist_query = hist_query.gsub('%{village_id}', village_id.to_s)
+                                 .gsub('%{date}', day.to_s)
+          hist_url = "#{@site_config.base_url}#{hist_query}"
+          hist_path = "villages/#{village_id}/day#{day}hist.html"
+          pages << { url: hist_url, path: hist_path }
         end
 
         # vinfoページを追加

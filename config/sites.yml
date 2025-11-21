@@ -40,8 +40,10 @@ sites:
       index: ""
       village_list: "?cmd=oldlog"
       village_index: "?vid=%{village_id}&mode=all"
-      village: "?vid=%{village_id}&turn=%{date}&mode=all"
+      village: "?vid=%{village_id}&turn=%{date}&mode=all&rowall=on"
       village_info: "?vid=%{village_id}&mode=all&cmd=vinfo"
+      village_memo: "?vid=%{village_id}&turn=%{date}&mode=all&cmd=memo"
+      village_hist: "?vid=%{village_id}&turn=%{date}&mode=all&cmd=hist"
       # user_list: "?cmd=ulist"
       user: "?prof=%{user_id}"
       static:
@@ -65,6 +67,16 @@ sites:
           vid: '(\d+)'
           cmd: 'vinfo'
         path: 'villages/%{vid}/vinfo.html'
+      - params:
+          vid: '(\d+)'
+          turn: '(\d+)'
+          cmd: 'memo'
+        path: 'villages/%{vid}/day%{turn}memo.html'
+      - params:
+          vid: '(\d+)'
+          turn: '(\d+)'
+          cmd: 'hist'
+        path: 'villages/%{vid}/day%{turn}hist.html'
       - params:
           vid: '(\d+)'
           mode: 'all'

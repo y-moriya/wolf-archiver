@@ -6,7 +6,6 @@ require 'wolf_archiver/fetcher'
 require 'wolf_archiver/storage'
 require 'wolf_archiver/path_mapper'
 require 'wolf_archiver/parser'
-require 'set'
 require 'tempfile'
 
 RSpec.describe WolfArchiver::AssetDownloader do
@@ -320,11 +319,11 @@ RSpec.describe WolfArchiver::AssetDownloader do
           .to_return(status: 200, body: 'body { color: red; }', headers: { 'Content-Type' => 'text/css' })
 
         # Storageをモックしてエラーを発生させる
-        allow(storage).to receive(:save_binary).and_raise(WolfArchiver::StorageError.new('Permission denied'))
+        allow(storage).to receive(:save).and_raise(WolfArchiver::StorageError.new('Permission denied'))
 
-        expect {
+        expect do
           downloader.download_single(asset)
-        }.to raise_error(WolfArchiver::AssetDownloaderError, /アセット保存失敗/)
+        end.to raise_error(WolfArchiver::AssetDownloaderError, /アセット保存失敗/)
       end
     end
   end
@@ -393,4 +392,3 @@ RSpec.describe WolfArchiver::AssetDownloader do
     end
   end
 end
-
