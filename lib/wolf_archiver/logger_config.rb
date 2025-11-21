@@ -34,11 +34,13 @@ module WolfArchiver
         FileUtils.mkdir_p(log_dir) unless Dir.exist?(log_dir)
       end
 
-      # ログファイルパスを取得（日付ごと）
+      # ログファイルパスを取得（実行時ごと）
       def log_file
-        log_dir = File.join(Dir.pwd, 'logs')
-        date_str = Time.now.strftime('%Y-%m-%d')
-        File.join(log_dir, "wolf_archiver_#{date_str}.log")
+        @log_file ||= begin
+          log_dir = File.join(Dir.pwd, 'logs')
+          timestamp = Time.now.strftime('%Y-%m-%d_%H-%M-%S')
+          File.join(log_dir, "wolf_archiver_#{timestamp}.log")
+        end
       end
 
       # 環境変数からログレベルを取得
@@ -56,7 +58,7 @@ module WolfArchiver
         when 'NONE'
           Logger::UNKNOWN + 1
         else
-          Logger::UNKNOWN + 1
+          Logger::ERROR
         end
       end
     end
