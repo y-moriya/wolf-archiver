@@ -17,14 +17,14 @@ module WolfArchiver
       # ロガーインスタンスを作成
       def create_logger(name)
         ensure_log_directory
-        
+
         logger = Logger.new(MultiIO.new(STDOUT, File.open(log_file, 'a')))
         logger.level = log_level
         logger.progname = name
         logger.formatter = proc do |severity, datetime, progname, msg|
           "[#{datetime.strftime('%Y-%m-%d %H:%M:%S')}] #{severity.ljust(5)} [#{progname}] #{msg}\n"
         end
-        
+
         logger
       end
 
@@ -43,7 +43,7 @@ module WolfArchiver
 
       # 環境変数からログレベルを取得
       def log_level
-        level_str = ENV['WOLF_ARCHIVER_LOG_LEVEL'] || 'INFO'
+        level_str = ENV['WOLF_ARCHIVER_LOG_LEVEL'] || 'NONE'
         case level_str.upcase
         when 'DEBUG'
           Logger::DEBUG
@@ -53,8 +53,10 @@ module WolfArchiver
           Logger::WARN
         when 'ERROR'
           Logger::ERROR
+        when 'NONE'
+          Logger::UNKNOWN + 1
         else
-          Logger::INFO
+          Logger::UNKNOWN + 1
         end
       end
     end

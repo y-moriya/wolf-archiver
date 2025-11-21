@@ -84,6 +84,10 @@ sites:
         path: 'villages/%{vid}/index.html'
       - params:
           vid: '(\d+)'
+        exact: true
+        path: 'villages/%{vid}/index.html'
+      - params:
+          vid: '(\d+)'
           turn: '(\d+)'
         path: 'villages/%{vid}/day%{turn}.html'
       - params:
@@ -92,7 +96,7 @@ sites:
       
       # 正規表現ベースのマッピング（旧形式・後方互換性維持）
       # パラメータ順序が固定されている場合や、特定のクエリ文字列にマッチさせる場合
-      - pattern: '^$'
+      - pattern: 'sow.cgi\?$'
         path: 'index.html'
       - pattern: '\?cmd=oldlog'
         path: 'village_list.html'
