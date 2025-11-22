@@ -124,11 +124,13 @@ RSpec.describe WolfArchiver::WolfArchiver do
         expect(fetcher).to have_received(:fetch).with("#{base_url}?cmd=vlist")
 
         # Day range detection
-        expect(fetcher).to have_received(:fetch).with("#{base_url}?cmd=vlog&vil=1&turn=0")
-
-        # Village pages (1..5 days)
-        (1..5).each do |day|
-          expect(fetcher).to have_received(:fetch).with("#{base_url}?cmd=vlog&vil=1&turn=#{day}")
+        # Village pages (0..5 days)
+        (0..5).each do |day|
+          if day == 0
+            expect(fetcher).to have_received(:fetch).with("#{base_url}?cmd=vlog&vil=1&turn=#{day}").twice
+          else
+            expect(fetcher).to have_received(:fetch).with("#{base_url}?cmd=vlog&vil=1&turn=#{day}")
+          end
           expect(storage).to have_received(:save).with("villages/1/day#{day}.html", 'rewritten html')
         end
       end

@@ -229,8 +229,9 @@ module WolfArchiver
       doc = Nokogiri::HTML(utf8_html)
 
       # 日数選択のセレクトボックスから最小・最大日数を取得
-      min_day = Float::INFINITY
-      max_day = -Float::INFINITY
+      # 日数選択のセレクトボックスから最小・最大日数を取得
+      min_day = initial_day
+      max_day = initial_day
 
       # doc.css("select[name=\"#{day_param}\"] option").each do |option|
       #   day = option['value'].to_i
@@ -240,25 +241,26 @@ module WolfArchiver
       # end
 
       # セレクトボックスが見つからない場合は、リンクから判定
-      if max_day == -Float::INFINITY
-        @logger.debug("day範囲検出: セレクトボックスが見つからないため、リンクから判定 - village_id=#{village_id}")
+      # セレクトボックスが見つからない場合は、リンクから判定
+      # if max_day == -Float::INFINITY
+      @logger.debug("day範囲検出: リンクから判定 - village_id=#{village_id}")
 
-        link_count = 0
-        doc.css('a').each_with_index do |link, i|
-          href = link['href']
-          @logger.debug("Link check [#{i}]: #{href}") if i < 10
-          next unless href =~ /[?&](?:turn|DATE)=(\d+)/
+      link_count = 0
+      doc.css('a').each_with_index do |link, i|
+        href = link['href']
+        @logger.debug("Link check [#{i}]: #{href}") if i < 10
+        next unless href =~ /[?&](?:turn|DATE)=(\d+)/
 
-          day = ::Regexp.last_match(1).to_i
-          min_day = day if day < min_day
-          max_day = day if day > max_day
-          link_count += 1
-        end
-
-        @logger.debug("day範囲検出: リンクから #{link_count} 件の日数情報を検出 - village_id=#{village_id}")
-      else
-        @logger.debug("day範囲検出: セレクトボックスから #{select_options_count} 件のオプションを検出 - village_id=#{village_id}")
+        day = ::Regexp.last_match(1).to_i
+        min_day = day if day < min_day
+        max_day = day if day > max_day
+        link_count += 1
       end
+
+      @logger.debug("day範囲検出: リンクから #{link_count} 件の日数情報を検出 - village_id=#{village_id}")
+      # else
+      #   @logger.debug("day範囲検出: セレクトボックスから #{select_options_count} 件のオプションを検出 - village_id=#{village_id}")
+      # end
 
       # 見つからない場合はエラー
       if min_day == Float::INFINITY || max_day == -Float::INFINITY
