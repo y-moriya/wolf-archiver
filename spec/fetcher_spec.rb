@@ -22,9 +22,9 @@ RSpec.describe WolfArchiver::Fetcher do
       stub_request(:get, base_url)
         .with(headers: { 'User-Agent' => /WolfArchiver/ })
         .to_return(status: 200, body: 'test', headers: { 'Content-Type' => 'text/html' })
-      
+
       fetcher.fetch('')
-      
+
       expect(WebMock).to have_requested(:get, base_url)
         .with(headers: { 'User-Agent' => /WolfArchiver/ })
     end
@@ -32,13 +32,13 @@ RSpec.describe WolfArchiver::Fetcher do
     it 'カスタムUser-Agentを設定できる' do
       custom_ua = 'CustomBot/1.0'
       fetcher = described_class.new(base_url, rate_limiter, user_agent: custom_ua)
-      
+
       stub_request(:get, base_url)
         .with(headers: { 'User-Agent' => custom_ua })
         .to_return(status: 200, body: 'test', headers: { 'Content-Type' => 'text/html' })
-      
+
       fetcher.fetch('')
-      
+
       expect(WebMock).to have_requested(:get, base_url)
         .with(headers: { 'User-Agent' => custom_ua })
     end
@@ -135,43 +135,70 @@ RSpec.describe WolfArchiver::Fetcher do
       it '404 Not Found の場合は FetchError を発生させる' do
         stub_request(:get, base_url).to_return(status: 404, body: 'Not Found')
 
-        expect {
+        expect do
           fetcher.fetch('')
-        }.to raise_error(WolfArchiver::FetchError)
+        end.to raise_error(WolfArchiver::FetchError)
       end
 
       it '500 Internal Server Error の場合は FetchError を発生させる' do
         stub_request(:get, base_url).to_return(status: 500, body: 'Internal Server Error')
 
-        expect {
+        expect do
           fetcher.fetch('')
-        }.to raise_error(WolfArchiver::FetchError)
+        end.to raise_error(WolfArchiver::FetchError)
       end
 
       it 'タイムアウトの場合は FetchError を発生させる' do
         # WebMockでタイムアウトをシミュレート
         stub_request(:get, base_url).to_raise(Faraday::TimeoutError.new('timeout'))
 
-        expect {
+        expect do
           fetcher.fetch('')
-        }.to raise_error(WolfArchiver::FetchError, /タイムアウト/)
+        end.to raise_error(WolfArchiver::FetchError, /タイムアウト/)
       end
 
       it '接続失敗の場合は FetchError を発生させる' do
         stub_request(:get, base_url).to_raise(Faraday::ConnectionFailed.new('Connection failed'))
 
-        expect {
+        expect do
           fetcher.fetch('')
-        }.to raise_error(WolfArchiver::FetchError, /接続失敗/)
+        end.to raise_error(WolfArchiver::FetchError, /接続失敗/)
       end
 
       it '不正なURLの場合は FetchError を発生させる' do
         invalid_url = 'not-a-valid-url'
         fetcher = described_class.new(invalid_url, rate_limiter)
 
-        expect {
+        expect do
           fetcher.fetch('')
-        }.to raise_error(WolfArchiver::FetchError, /不正なURL/)
+        end.to raise_error(WolfArchiver::FetchError, /不正なURL/)
+      end
+
+      it '503 Service Unavailable の場合は指定回数リトライする' do
+        # 最初の2回は503、3回目で200 OK
+        stub_request(:get, base_url)
+          .to_return(status: 503, body: 'Service Unavailable')
+          .then
+          .to_return(status: 503, body: 'Service Unavailable')
+          .then
+          .to_return(status: 200, body: 'OK', headers: { 'Content-Type' => 'text/html' })
+
+        result = fetcher.fetch('')
+
+        expect(result.status).to eq(200)
+        # 合計3回リクエストされるはず (初回 + リトライ2回)
+        expect(WebMock).to have_requested(:get, base_url).times(3)
+      end
+
+      it '503エラーが続き、最大リトライ回数を超えた場合はFetchErrorを発生させる' do
+        # 6回連続503 (デフォルトmax_retries=5なので、初回+5回リトライ=6回)
+        stub_request(:get, base_url).to_return(status: 503, body: 'Service Unavailable')
+
+        expect do
+          fetcher.fetch('')
+        end.to raise_error(WolfArchiver::FetchError, /リトライ回数超過/)
+
+        expect(WebMock).to have_requested(:get, base_url).times(6)
       end
     end
 
@@ -203,7 +230,7 @@ RSpec.describe WolfArchiver::Fetcher do
       it 'バイナリコンテンツを正しく取得できる' do
         image_url = 'http://example.com/image.png'
         image_data = "\x89PNG\r\n\x1a\n".dup.force_encoding('BINARY')
-        
+
         stub_request(:get, image_url)
           .to_return(status: 200, body: image_data, headers: { 'Content-Type' => 'image/png' })
 
@@ -229,9 +256,22 @@ RSpec.describe WolfArchiver::Fetcher do
         url = 'http://example.com/missing.png'
         stub_request(:get, url).to_return(status: 404)
 
-        expect {
+        expect do
           fetcher.fetch_binary(url)
-        }.to raise_error(WolfArchiver::FetchError, /バイナリ取得エラー/)
+        end.to raise_error(WolfArchiver::FetchError, /バイナリ取得エラー/)
+      end
+
+      it '503 Service Unavailable の場合は指定回数リトライする' do
+        url = 'http://example.com/image.png'
+        stub_request(:get, url)
+          .to_return(status: 503, body: 'Service Unavailable')
+          .then
+          .to_return(status: 200, body: 'binary', headers: { 'Content-Type' => 'image/png' })
+
+        result = fetcher.fetch_binary(url)
+
+        expect(result.status).to eq(200)
+        expect(WebMock).to have_requested(:get, url).times(2)
       end
     end
   end
@@ -383,4 +423,3 @@ RSpec.describe WolfArchiver::FetchResult do
     end
   end
 end
-

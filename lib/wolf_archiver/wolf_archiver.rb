@@ -361,17 +361,24 @@ module WolfArchiver
 
       pages.each { |page| @downloaded_paths.add(page[:path]) }
 
-      pages.each_with_index do |page, _index|
+      queue = Queue.new
+      pages.each { |page| queue << page }
+
+      until queue.empty?
+        page = queue.pop
         @logger.debug("ページ処理: #{page[:url]} => #{page[:path]}")
-        process_single_page(page, force: force)
-        @stats[:pages][:succeeded] += 1
-      rescue StandardError => e
-        @logger.error("ページ処理エラー: #{page[:url]} - #{e.message}")
-        puts "エラー: #{page[:url]} - #{e.message}"
-        @stats[:pages][:failed] += 1
-      ensure
-        @stats[:pages][:total] += 1
-        progressbar.advance
+
+        begin
+          process_single_page(page, force: force)
+          @stats[:pages][:succeeded] += 1
+        rescue StandardError => e
+          @logger.error("ページ処理エラー: #{page[:url]} - #{e.message}")
+          puts "エラー: #{page[:url]} - #{e.message}"
+          @stats[:pages][:failed] += 1
+        ensure
+          @stats[:pages][:total] += 1
+          progressbar.advance
+        end
       end
 
       progressbar.finish
