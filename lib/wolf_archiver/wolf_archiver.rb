@@ -342,7 +342,7 @@ module WolfArchiver
         href = link['href']
         next unless href
 
-        village_ids.add(::Regexp.last_match(1).to_i) if href.match(/vid=(\d+)/)
+        village_ids.add(::Regexp.last_match(1).to_i) if href.match(/[vid|NO]=(\d+)/)
       end
 
       sorted_ids = village_ids.to_a.sort
