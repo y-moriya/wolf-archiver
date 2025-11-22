@@ -138,7 +138,7 @@ RSpec.describe WolfArchiver::WolfArchiver do
 
     context 'with user_ids option' do
       it 'processes user pages' do
-        subject.run(user_ids: [100])
+        subject.run(user_ids: ['100'])
 
         # User list
         expect(fetcher).to have_received(:fetch).with("#{base_url}?cmd=ulist")
@@ -223,9 +223,9 @@ RSpec.describe WolfArchiver::WolfArchiver do
           <html>
             <body>
               <a href="?cmd=ulog&uid=101">User 101</a>
-              <a href="?cmd=ulog&uid=102">User 102</a>
+              <a href="?cmd=ulog&uid=admin">Admin User</a>
               <a href="?cmd=other">Other Link</a>
-              <a href="?uid=103&cmd=ulog">User 103</a>
+              <a href="?uid=user_123&cmd=ulog">User 123</a>
             </body>
           </html>
         HTML
@@ -238,7 +238,7 @@ RSpec.describe WolfArchiver::WolfArchiver do
 
       it 'extracts user IDs from links' do
         ids = subject.send(:discover_user_ids)
-        expect(ids).to eq([101, 102, 103])
+        expect(ids).to eq(%w[101 admin user_123])
       end
     end
   end

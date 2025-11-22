@@ -385,8 +385,9 @@ module WolfArchiver
       end
 
       user_id_param = param_match[1]
-      # パラメータ名を使って正規表現を作成 (例: /[?&]uid=(\d+)/)
-      regex = /[?&]#{Regexp.escape(user_id_param)}=(\d+)/
+      # パラメータ名を使って正規表現を作成 (例: /[?&]uid=([^&]+)/)
+      # 数値だけでなく文字列のIDもサポートするため ([^&]+) を使用
+      regex = /[?&]#{Regexp.escape(user_id_param)}=([^&]+)/
 
       user_ids = Set.new
       doc.css('a').each do |link|
@@ -394,7 +395,7 @@ module WolfArchiver
         next unless href
 
         if (match = href.match(regex))
-          user_ids.add(match[1].to_i)
+          user_ids.add(match[1])
         end
       end
 
