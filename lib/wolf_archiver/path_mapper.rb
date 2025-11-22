@@ -54,8 +54,10 @@ module WolfArchiver
           end
         # 正規表現ベースのマッピング（旧形式・後方互換性維持）
         elsif mapping[:pattern]
-          query = uri.query || ''
-          full_path = "#{uri.path}?#{query}".sub(/^\?/, '')
+          query = uri.query
+          full_path = uri.path
+          full_path += "?#{query}" if query && !query.empty?
+          full_path = full_path.sub(/^\?/, '')
 
           if (match = mapping[:pattern].match(full_path))
             path = mapping[:path_template].dup

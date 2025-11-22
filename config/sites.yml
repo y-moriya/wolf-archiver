@@ -269,8 +269,8 @@ sites:
       # village_info: "?vid=%{village_id}&mode=all&cmd=vinfo"
       # village_memo: "?vid=%{village_id}&turn=%{date}&mode=all&cmd=memo"
       # village_hist: "?vid=%{village_id}&turn=%{date}&mode=all&cmd=hist"
-      # user_list: "?cmd=ulist"
-      # user: "?prof=%{user_id}"
+      user_list: "userlist.cgi"
+      user: "userview.cgi?id=%{user_id}"
       static:
         - "rule.html"
         - "userlist.cgi"

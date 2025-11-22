@@ -172,6 +172,14 @@ RSpec.describe WolfArchiver::PathMapper do
 
         expect(result).to be_nil
       end
+
+      it 'クエリパラメータがないURLでも正規表現パターンにマッチする' do
+        base = 'http://example.com/'
+        mapper = described_class.new(base, [{ pattern: 'index.cgi$', path: 'index.html' }])
+        result = mapper.url_to_path("#{base}index.cgi")
+
+        expect(result).to eq('index.html')
+      end
     end
   end
 
