@@ -209,10 +209,13 @@ module WolfArchiver
     end
 
     def detect_day_range(village_id)
-      # まずday 0で取得を試みる
+      # 設定された初期値（デフォルト: 0）で取得を試みる
+      initial_day = @site_config.respond_to?(:initial_day) ? @site_config.initial_day : 0
+      initial_day ||= 0 # nilの場合も0にする
+
       query = @site_config.pages[:village]
                           .gsub('%{village_id}', village_id.to_s)
-                          .gsub('%{date}', '0')
+                          .gsub('%{date}', initial_day.to_s)
 
       url = "#{@site_config.base_url}#{query}"
       @logger.debug("day範囲検出: HTMLを取得中 - URL: #{url}")
@@ -229,8 +232,7 @@ module WolfArchiver
       min_day = Float::INFINITY
       max_day = -Float::INFINITY
 
-      # select_options_count = 0
-      # doc.css('select[name="turn"] option').each do |option|
+      # doc.css("select[name=\"#{day_param}\"] option").each do |option|
       #   day = option['value'].to_i
       #   min_day = day if day < min_day
       #   max_day = day if day > max_day
@@ -242,8 +244,10 @@ module WolfArchiver
         @logger.debug("day範囲検出: セレクトボックスが見つからないため、リンクから判定 - village_id=#{village_id}")
 
         link_count = 0
-        doc.css('a').each do |link|
-          next unless link['href'] =~ /turn=(\d+)/
+        doc.css('a').each_with_index do |link, i|
+          href = link['href']
+          @logger.debug("Link check [#{i}]: #{href}") if i < 10
+          next unless href =~ /[?&](?:turn|DATE)=(\d+)/
 
           day = ::Regexp.last_match(1).to_i
           min_day = day if day < min_day

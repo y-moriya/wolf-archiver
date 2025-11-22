@@ -225,3 +225,78 @@ sites:
         path: 'village_list.html'
       - pattern: '\?cmd=(\w+)'
         path: 'static/%{1}.html'
+
+  # サイト識別子（英数字とアンダースコアのみ）
+  sg_new:
+    # 表示名
+    name: "Are you a WereWolf? Shadow Gallery Ver 2.0"
+    
+    # ベースURL
+    base_url: "https://euros.sakura.ne.jp/sg/new/"
+    
+    # 文字エンコーディング（Shift_JIS, EUC-JP, UTF-8）
+    encoding: "EUC-JP"
+    
+    # リクエスト間隔（秒）
+    wait_time: 2.0
+    
+    # day範囲検出時の初期値（デフォルト: 0）
+    initial_day: 1
+    
+    # アセット設定
+    assets:
+      download: true
+      types:
+        - css
+        - js
+        - images
+      # css_dir: "assets/css"
+      # js_dir: "assets/js"
+      # images_dir: "assets/images"
+    
+    # リンク書き換え設定
+    link_rewrite:
+      enabled: true
+      exclude_domains: []
+      fallback: "#"
+    
+    # ページ定義
+    pages:
+      index: "index.cgi"
+      village_list: "index.cgi?LIST=all"
+      village_index: "jinro.cgi?NO=%{village_id}&DISP=ALL"
+      village: "jinro.cgi?NO=%{village_id}&DATE=%{date}&DISP=ALL"
+      # village_info: "?vid=%{village_id}&mode=all&cmd=vinfo"
+      # village_memo: "?vid=%{village_id}&turn=%{date}&mode=all&cmd=memo"
+      # village_hist: "?vid=%{village_id}&turn=%{date}&mode=all&cmd=hist"
+      # user_list: "?cmd=ulist"
+      # user: "?prof=%{user_id}"
+      static:
+        - "rule.html"
+        - "userlist.cgi"
+    
+    # パスマッピング（URL → ファイルパス）
+    path_mapping:
+      # パラメータベースのマッピング（新形式）
+      # URLパラメータの順序に依存せず、必要なパラメータで判定
+      - params:
+          "NO": '(\d+)'
+        exact: true
+        path: 'villages/%{NO}/index.html'
+      - params:
+          "NO": '(\d+)'
+          DATE: '(\d+)'
+        path: 'villages/%{NO}/day%{DATE}.html'
+      
+      # 正規表現ベースのマッピング（旧形式・後方互換性維持）
+      # パラメータ順序が固定されている場合や、特定のクエリ文字列にマッチさせる場合
+      - pattern: 'index.cgi$'
+        path: 'index.html'
+      - pattern: '\?LIST=all'
+        path: 'village_list.html'
+      - pattern: 'rule.html'
+        path: 'static/rule.html'
+      - pattern: 'userlist.cgi'
+        path: 'static/userlist.html'
+      # - pattern: '\?cmd=(\w+)'
+      #   path: 'static/%{1}.html'
