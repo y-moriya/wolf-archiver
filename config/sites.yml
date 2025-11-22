@@ -238,7 +238,7 @@ sites:
     encoding: "EUC-JP"
     
     # リクエスト間隔（秒）
-    wait_time: 2.0
+    wait_time: 5.0
     
     # day範囲検出時の初期値（デフォルト: 0）
     initial_day: 1
@@ -287,6 +287,9 @@ sites:
           "NO": '(\d+)'
           DATE: '(\d+)'
         path: 'villages/%{NO}/day%{DATE}.html'
+      - params:
+          "id": '(\w+)'
+        path: 'users/%{id}.html'
       
       # 正規表現ベースのマッピング（旧形式・後方互換性維持）
       # パラメータ順序が固定されている場合や、特定のクエリ文字列にマッチさせる場合
@@ -297,6 +300,6 @@ sites:
       - pattern: 'rule.html'
         path: 'static/rule.html'
       - pattern: 'userlist.cgi'
-        path: 'static/userlist.html'
+        path: 'users/userlist.html'
       # - pattern: '\?cmd=(\w+)'
       #   path: 'static/%{1}.html'

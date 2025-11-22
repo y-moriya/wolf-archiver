@@ -351,7 +351,56 @@ module WolfArchiver
     end
 
     def discover_user_ids
-      [] # 簡略版
+      query = @site_config.pages[:user_list]
+      unless query
+        @logger.warn('自動検出スキップ: user_listページが設定されていません')
+        return []
+      end
+
+      url = "#{@site_config.base_url}#{query}"
+      @logger.info("ユーザーID自動検出開始: #{url}")
+
+      result = @fetcher.fetch(url)
+      unless result.success?
+        @logger.error("ユーザーリストの取得に失敗: #{result.status}")
+        return []
+      end
+
+      utf8_html = EncodingConverter.to_utf8(result.body, @site_config.encoding)
+      doc = Nokogiri::HTML(utf8_html)
+
+      # ユーザーページURLのパターンから、ユーザーIDを表すパラメータ名を特定
+      user_page_query = @site_config.pages[:user]
+      unless user_page_query
+        @logger.warn('自動検出スキップ: userページが設定されていません')
+        return []
+      end
+
+      # %{user_id} がどのパラメータに割り当てられているかを探す
+      # 例: "?cmd=ulog&uid=%{user_id}" -> "uid"
+      param_match = user_page_query.match(/[?&]([^=]+)=%\{user_id\}/)
+      unless param_match
+        @logger.warn("自動検出スキップ: userページの定義からユーザーIDパラメータを特定できませんでした: #{user_page_query}")
+        return []
+      end
+
+      user_id_param = param_match[1]
+      # パラメータ名を使って正規表現を作成 (例: /[?&]uid=(\d+)/)
+      regex = /[?&]#{Regexp.escape(user_id_param)}=(\d+)/
+
+      user_ids = Set.new
+      doc.css('a').each do |link|
+        href = link['href']
+        next unless href
+
+        if (match = href.match(regex))
+          user_ids.add(match[1].to_i)
+        end
+      end
+
+      sorted_ids = user_ids.to_a.sort
+      @logger.info("ユーザーID自動検出完了: #{sorted_ids.size}件検出")
+      sorted_ids
     end
 
     def process_pages(pages, force: false)

@@ -216,5 +216,30 @@ RSpec.describe WolfArchiver::WolfArchiver do
         expect(ids).to eq([1, 2, 3])
       end
     end
+
+    describe '#discover_user_ids' do
+      let(:user_list_html) do
+        <<~HTML
+          <html>
+            <body>
+              <a href="?cmd=ulog&uid=101">User 101</a>
+              <a href="?cmd=ulog&uid=102">User 102</a>
+              <a href="?cmd=other">Other Link</a>
+              <a href="?uid=103&cmd=ulog">User 103</a>
+            </body>
+          </html>
+        HTML
+      end
+
+      before do
+        allow(fetcher).to receive(:fetch).with("#{base_url}?cmd=ulist")
+                                         .and_return(double(success?: true, body: user_list_html, status: 200))
+      end
+
+      it 'extracts user IDs from links' do
+        ids = subject.send(:discover_user_ids)
+        expect(ids).to eq([101, 102, 103])
+      end
+    end
   end
 end
