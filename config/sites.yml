@@ -232,13 +232,13 @@ sites:
     name: "Are you a WereWolf? Shadow Gallery Ver 2.0"
     
     # ベースURL
-    base_url: "https://euros.sakura.ne.jp/sg/new/"
+    base_url: "http://localhost:8081/sg/new/"
     
     # 文字エンコーディング（Shift_JIS, EUC-JP, UTF-8）
     encoding: "EUC-JP"
     
     # リクエスト間隔（秒）
-    wait_time: 5.0
+    wait_time: 0
     
     # day範囲検出時の初期値（デフォルト: 0）
     initial_day: 1
